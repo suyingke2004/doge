@@ -16,14 +16,23 @@ class NewsTools:
         当需要获取关于某个主题的最新新闻时，使用此工具。
         它会返回一个包含多篇新闻文章及其URL的列表。
         """
+        # 添加对空查询的检查
+        if not query or not query.strip():
+            return "没有找到相关的新闻。"
+
         api_key = os.getenv("NEWS_API_KEY")
         if not api_key:
             raise ValueError("未找到 NEWS_API_KEY，请确保 .env 文件中已配置。")
 
         newsapi = NewsApiClient(api_key=api_key)
         try:
-            top_headlines = newsapi.get_top_headlines(q=query, language='zh')
-            articles = top_headlines.get('articles', [])
+            # 使用 get_everything 接口进行更广泛的搜索
+            all_articles = newsapi.get_everything(
+                q=query, 
+                language='zh', 
+                sort_by='relevancy' # 按相关性排序
+            )
+            articles = all_articles.get('articles', [])
 
             if not articles:
                 return "没有找到相关的新闻。"
