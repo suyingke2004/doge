@@ -12,92 +12,39 @@ app = Flask(__name__)
 # 在生产环境中，应使用更安全的方式管理密钥，例如环境变量
 app.secret_key = os.urandom(24)
 
-# 2. 定义主页路由
+# 2. 定义主页路由（重定向到流式端点）
 @app.route('/')
 def index():
-    """渲染聊天界面，用户可以直接开始对话"""
-    # 准备用于渲染模板的数据
-    chat_history_to_render = session.get('chat_history', [])
-    # 将 Markdown 转换为 HTML
-    for message in chat_history_to_render:
-        if message['type'] == 'ai':
-            message['content_html'] = markdown.markdown(message['content'])
-            
-    return render_template('chat.html', chat_history=chat_history_to_render)
+    """重定向到流式聊天端点"""
+    return redirect(url_for('chat_stream'))
 
 # 3. 定义开始新对话的路由
 @app.route('/new')
 def new_chat():
     """清除 session 中的聊天记录，开始一个新对话"""
     session.pop('chat_history', None)
-    session.pop('model_choice', None)
-    return redirect(url_for('index'))
+    session.pop('model_provider', None)
+    session.pop('model_name', None)
+    return redirect(url_for('chat_stream'))
 
-# 4. 定义生成路由，现在也处理后续的聊天
-@app.route('/chat', methods=['GET', 'POST'])
-def chat():
-    """处理用户的首次提问和后续追问"""
-    if request.method == 'POST':
-        # 从表单获取用户输入
-        user_input = request.form.get('topic')
-        
-        # 如果是新对话，获取模型选择并存入 session
-        if 'chat_history' not in session:
-            model_provider = request.form.get('model_provider', 'deepseek')
-            model_name = request.form.get('model_name', '').strip()
-            # 如果没有提供模型名称，则使用空字符串表示使用默认模型
-            model_name = model_name if model_name else None
-            
-            session['model_provider'] = model_provider
-            session['model_name'] = model_name
-            session['chat_history'] = []
-        else:
-            # 对于已存在的对话，从 session 中获取模型选择
-            model_provider = session['model_provider']
-            model_name = session['model_name']
-
-        if not user_input:
-            return "错误：请输入一个主题或问题。", 400
-
-        # 从 session 中获取历史记录
-        chat_history_raw = session.get('chat_history', [])
-        # 将原始字典列表转换为 LangChain 消息对象列表
-        chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
-
-        try:
-            # 创建代理实例，并传入历史记录
-            agent = NewsletterAgent(model_provider=model_provider, model_name=model_name, chat_history=chat_history_messages)
-            
-            # 调用代理生成内容
-            ai_response = agent.generate_newsletter(user_input)
-            
-            # 更新历史记录
-            chat_history_raw.append({'type': 'human', 'content': user_input})
-            chat_history_raw.append({'type': 'ai', 'content': ai_response})
-            session['chat_history'] = chat_history_raw
-
-        except ValueError as e:
-            print(f"配置错误: {e}")
-            return f"错误: {e}", 500
-        except Exception as e:
-            print(f"生成内容时出错: {e}")
-            return f"生成内容时发生错误: {e}", 500
-
-    # 准备用于渲染模板的数据
-    chat_history_to_render = session.get('chat_history', [])
-    # 将 Markdown 转换为 HTML
-    for message in chat_history_to_render:
-        if message['type'] == 'ai':
-            message['content_html'] = markdown.markdown(message['content'])
-
-    return render_template('chat.html', chat_history=chat_history_to_render)
-
-# 5. 添加流式响应的路由
-@app.route('/chat_stream', methods=['POST'])
+# 4. 定义流式生成路由，处理所有对话
+@app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
     """处理用户的提问并以流式方式返回响应"""
     import asyncio
 
+    # 如果是 GET 请求，渲染聊天界面
+    if request.method == 'GET':
+        # 准备用于渲染模板的数据
+        chat_history_to_render = session.get('chat_history', [])
+        # 将 Markdown 转换为 HTML
+        for message in chat_history_to_render:
+            if message['type'] == 'ai':
+                message['content_html'] = markdown.markdown(message['content'])
+                
+        return render_template('chat.html', chat_history=chat_history_to_render)
+
+    # 如果是 POST 请求，处理流式响应
     def generate():
         # 从表单获取用户输入
         user_input = request.form.get('topic')
@@ -182,6 +129,8 @@ def chat_stream():
 
     # 使用Flask的stream_with_context包装生成器
     return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')
+
+
 
 # 启动应用的入口
 if __name__ == '__main__':
