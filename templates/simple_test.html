@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简化测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chat-window {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            padding: 5px;
+            margin: 5px 0;
+        }
+        .ai-message {
+            background-color: #f5f5f5;
+            padding: 5px;
+            margin: 5px 0;
+        }
+        #chat-form {
+            display: flex;
+        }
+        #topic-input {
+            flex: 1;
+            padding: 5px;
+        }
+        #send-button {
+            padding: 5px 10px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>简化测试页面</h1>
+    
+    <div id="chat-window"></div>
+    
+    <form id="chat-form">
+        <input type="text" id="topic-input" placeholder="输入消息..." required>
+        <button type="submit" id="send-button">发送</button>
+    </form>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatForm = document.getElementById('chat-form');
+            const topicInput = document.getElementById('topic-input');
+            const chatWindow = document.getElementById('chat-window');
+            const sendButton = document.getElementById('send-button');
+            
+            console.log('页面加载完成');
+            console.log('chatForm:', chatForm);
+            console.log('topicInput:', topicInput);
+            console.log('sendButton:', sendButton);
+            
+            // 处理表单提交
+            chatForm.addEventListener('submit', async function(e) {
+                console.log('表单提交事件触发');
+                e.preventDefault();
+                
+                const topic = topicInput.value;
+                console.log('用户输入:', topic);
+                
+                if (!topic.trim()) {
+                    console.log('输入为空');
+                    return;
+                }
+                
+                // 添加用户消息到聊天窗口
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'user-message';
+                userMessageDiv.innerHTML = `<strong>你:</strong> ${topic}`;
+                chatWindow.appendChild(userMessageDiv);
+                
+                // 清空输入框
+                topicInput.value = '';
+                
+                // 创建AI消息容器
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'ai-message';
+                aiMessageDiv.innerHTML = '<strong>AI助手:</strong> <span id="ai-response">正在思考...</span>';
+                chatWindow.appendChild(aiMessageDiv);
+                
+                const aiResponseSpan = aiMessageDiv.querySelector('#ai-response');
+                
+                // 滚动到底部
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                
+                try {
+                    console.log('发送请求到服务器');
+                    // 发送请求到流式端点
+                    const formData = new FormData();
+                    formData.append('topic', topic);
+                    
+                    const response = await fetch('/chat_stream', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('收到响应，状态码:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let accumulatedText = '';
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) {
+                            console.log('流式响应结束');
+                            break;
+                        }
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        accumulatedText += chunk;
+                        
+                        // 更新AI响应
+                        aiResponseSpan.textContent = accumulatedText;
+                        
+                        // 滚动到底部
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    aiResponseSpan.textContent = '抱歉，发生错误: ' + error.message;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -28,6 +28,34 @@ def new_chat():
     session.pop('maxiter', None)
     return redirect(url_for('chat_stream'))
 
+# 3.5 定义调试聊天路由
+@app.route('/debug_chat')
+def debug_chat():
+    """调试聊天页面"""
+    # 从 session 中获取聊天历史记录
+    chat_history_raw = session.get('chat_history', [])
+    # 将原始字典列表转换为包含HTML的字典列表
+    chat_history_with_html = []
+    for msg in chat_history_raw:
+        # 创建消息副本并添加HTML版本的内容
+        msg_with_html = msg.copy()
+        if msg['type'] == 'ai':
+            # 将AI消息的Markdown内容转换为HTML
+            msg_with_html['content_html'] = markdown.markdown(msg['content'])
+        else:
+            # 对于用户消息，直接显示文本
+            msg_with_html['content_html'] = msg['content']
+        chat_history_with_html.append(msg_with_html)
+    
+    # 渲染带调试信息的聊天模板
+    return render_template('debug_chat.html', chat_history=chat_history_with_html)
+
+# 3.6 定义简化测试路由
+@app.route('/simple_test')
+def simple_test():
+    """简化测试页面"""
+    return render_template('simple_test.html')
+
 # 4. 定义流式生成路由，处理所有对话
 @app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
