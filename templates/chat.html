@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <h1>新闻对话</h1>
-        <div class="chat-window">
+        <div class="chat-window" id="chat-window">
             {% for message in chat_history %}
                 {% if message.type == 'human' %}
                     <div class="chat-message user-message">
@@ -24,12 +24,85 @@
             {% endfor %}
         </div>
 
-        <form action="{{ url_for('chat') }}" method="post" class="chat-form">
-            <input type="text" name="topic" placeholder="继续提问..." required>
+        <form id="chat-form" class="chat-form">
+            <input type="text" id="topic-input" name="topic" placeholder="继续提问..." required>
+            <input type="hidden" id="model-input" name="model" value="{{ request.form.get('model', 'openai') if request.method == 'POST' else 'openai' }}">
             <button type="submit">发送</button>
         </form>
 
         <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatForm = document.getElementById('chat-form');
+            const topicInput = document.getElementById('topic-input');
+            const chatWindow = document.getElementById('chat-window');
+            const modelInput = document.getElementById('model-input');
+
+            chatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const topic = topicInput.value;
+                if (!topic.trim()) return;
+                
+                // 添加用户消息到聊天窗口
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'chat-message user-message';
+                userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
+                chatWindow.appendChild(userMessageDiv);
+                
+                // 清空输入框
+                topicInput.value = '';
+                
+                // 创建AI消息容器
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'chat-message ai-message';
+                aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
+                chatWindow.appendChild(aiMessageDiv);
+                
+                const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                
+                // 滚动到底部
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                
+                try {
+                    // 发送请求到流式端点
+                    const response = await fetch('/chat_stream', {
+                        method: 'POST',
+                        body: new FormData(chatForm),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let accumulatedText = '';
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        accumulatedText += chunk;
+                        
+                        // 更新AI响应
+                        aiResponseDiv.textContent = accumulatedText;
+                        
+                        // 滚动到底部
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

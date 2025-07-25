@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, Response, stream_with_context
 from agent import NewsletterAgent
 from langchain_core.messages import AIMessage, HumanMessage
 import markdown
 import os
+import asyncio
+import json
 
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
@@ -76,6 +78,52 @@ def chat():
             message['content_html'] = markdown.markdown(message['content'])
 
     return render_template('chat.html', chat_history=chat_history_to_render)
+
+# 5. 添加流式响应的路由
+@app.route('/chat_stream', methods=['POST'])
+def chat_stream():
+    """处理用户的提问并以流式方式返回响应"""
+    async def generate():
+        # 从表单获取用户输入
+        user_input = request.form.get('topic')
+        
+        # 获取模型选择
+        model_choice = request.form.get('model', 'openai')
+        
+        if not user_input:
+            yield "错误：请输入一个主题或问题。"
+            return
+
+        # 从 session 中获取历史记录
+        chat_history_raw = session.get('chat_history', [])
+        # 将原始字典列表转换为 LangChain 消息对象列表
+        chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
+
+        try:
+            # 创建代理实例，并传入历史记录
+            agent = NewsletterAgent(model_provider=model_choice, chat_history=chat_history_messages)
+            
+            # 使用流式方式调用代理生成内容
+            full_response = ""
+            async for chunk in agent.generate_newsletter_stream(user_input):
+                # 发送每个块到客户端
+                yield chunk
+                full_response += chunk
+                
+            # 更新历史记录
+            chat_history_raw.append({'type': 'human', 'content': user_input})
+            chat_history_raw.append({'type': 'ai', 'content': full_response})
+            session['chat_history'] = chat_history_raw
+
+        except ValueError as e:
+            print(f"配置错误: {e}")
+            yield f"错误: {e}"
+        except Exception as e:
+            print(f"生成内容时出错: {e}")
+            yield f"生成内容时发生错误: {e}"
+
+    # 使用Flask的stream_with_context包装异步生成器
+    return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')
 
 # 启动应用的入口
 if __name__ == '__main__':

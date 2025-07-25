@@ -25,5 +25,16 @@
             <button type="submit">开始对话</button>
         </form>
     </div>
+
+    <script>
+        // 添加一个简单的脚本来确保表单提交后能正确处理
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                // 表单会正常提交到/chat端点，第一次对话仍然使用非流式方式
+                // 后续对话会使用/chat_stream端点（在chat.html中处理）
+            });
+        });
+    </script>
 </body>
 </html>

@@ -125,6 +125,7 @@ button:hover {
 
 .ai-message div {
     margin-top: 5px;
+    white-space: pre-wrap; /* 保留换行和空格 */
 }
 
 /* 聊天输入表单 */
@@ -141,4 +142,33 @@ button:hover {
 
 .chat-form button {
     white-space: nowrap;
+}
+
+/* 流式输出动画效果 */
+.typing-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #007bff;
+    margin: 0 2px;
+    opacity: 0.6;
+    animation: typing 1s infinite;
+}
+
+.typing-indicator:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-5px);
+    }
 }

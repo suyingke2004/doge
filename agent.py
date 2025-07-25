@@ -12,7 +12,7 @@ load_dotenv()
 class NewsletterAgent:
     """
     一个能够研究主题并生成新闻通讯的AI代理。
-    现在支持对话记忆。
+    现在支持对话记忆和流式输出。
     """
     def __init__(self, model_provider: str = "openai", chat_history: list = None):
         """
@@ -89,6 +89,26 @@ class NewsletterAgent:
             "chat_history": self.chat_history
         })
         return response['output']
+
+    async def generate_newsletter_stream(self, topic: str):
+        """
+        根据给定主题和对话历史生成回应，并以流式方式返回。
+        """
+        async for chunk in self.agent_executor.astream({
+            "input": topic,
+            "chat_history": self.chat_history
+        }):
+            # 只返回最终输出的流，忽略中间步骤
+            if "output" in chunk:
+                yield chunk["output"]
+            elif "actions" in chunk:
+                # 这里可以处理工具调用的流式输出（如果需要显示工具调用过程）
+                # 暂时我们只关注最终输出
+                pass
+            elif "steps" in chunk:
+                # 这里可以处理中间步骤的流式输出（如果需要显示推理过程）
+                # 暂时我们只关注最终输出
+                pass
 
 # 主程序入口（用于测试对话记忆功能）
 if __name__ == '__main__':
