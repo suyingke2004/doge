@@ -131,6 +131,11 @@ class NewsletterAgent:
         """
         根据给定主题和对话历史生成回应，并以流式方式返回。
         """
+        import asyncio  # 确保导入asyncio
+        
+        # 初始化一个变量来收集完整的响应
+        full_response = ""
+        
         try:
             async for chunk in self.agent_executor.astream({
                 "input": topic,
@@ -138,7 +143,44 @@ class NewsletterAgent:
             }):
                 # 只返回最终输出的流，忽略中间步骤
                 if "output" in chunk:
-                    yield chunk["output"]
+                    # 累积响应内容
+                    output = chunk["output"]
+                    full_response += output
+                    
+                    # 检查是否是最大迭代次数的消息
+                    if "agent stopped due to max iterations" in output.lower():
+                        # 当达到最大迭代次数时，给出总结性信息
+                        summary_msg = "\n\n[已达到最大迭代次数限制，正在为您总结当前已获取的信息...]\n"
+                        yield summary_msg
+                        
+                        # 收集到目前为止的所有输出内容
+                        # 如果已经有内容，则进行总结；否则提供一般性说明
+                        if full_response.strip() and not full_response.lower().endswith("agent stopped due to max iterations."):
+                            # 创建一个总结提示，包含到目前为止的所有内容
+                            summary_prompt = f"基于以上对话内容，请简洁总结已获取的信息来回答最初的问题：{topic}\n\n已获取的内容：{full_response}"
+                        else:
+                            # 如果还没有获取到内容，则提供一般性说明
+                            summary_prompt = f"在尝试回答问题'{topic}'时，已经达到了最大迭代次数限制。请基于你已有的知识提供一个简洁的回答。"
+                        
+                        try:
+                            # 使用LLM生成总结
+                            summary_response = self.llm.invoke([
+                                *self.chat_history,
+                                HumanMessage(content=summary_prompt)
+                            ])
+                            
+                            # 流式输出总结内容
+                            summary_content = summary_response.content
+                            for i in range(0, len(summary_content), 10):
+                                yield summary_content[i:i+10]
+                                # 添加一个小延迟以模拟流式效果
+                                await asyncio.sleep(0.01)
+                        except Exception as summary_error:
+                            # 如果总结过程也出错，则提供一个简单的错误信息
+                            error_msg = f"\n\n[抱歉，在总结信息时遇到问题: {summary_error}]"
+                            yield error_msg
+                    else:
+                        yield output
                 elif "actions" in chunk:
                     # 这里可以处理工具调用的流式输出（如果需要显示工具调用过程）
                     # 暂时我们只关注最终输出
@@ -148,31 +190,9 @@ class NewsletterAgent:
                     # 暂时我们只关注最终输出
                     pass
         except Exception as e:
-            # 检查是否是因为达到最大迭代次数而导致的异常
-            if "max iterations" in str(e).lower() or "maximum iterations" in str(e).lower():
-                # 当达到最大迭代次数时，给出总结性信息
-                summary_msg = "\n\n[已达到最大迭代次数限制，正在为您总结当前已获取的信息...]\n"
-                yield summary_msg
-                
-                # 创建一个简短的总结提示
-                summary_prompt = f"基于以上对话内容，请简洁总结已获取的信息来回答最初的问题：{topic}"
-                
-                # 使用LLM生成总结
-                summary_response = self.llm.invoke([
-                    *self.chat_history,
-                    HumanMessage(content=summary_prompt)
-                ])
-                
-                # 流式输出总结内容
-                summary_content = summary_response.content
-                for i in range(0, len(summary_content), 10):
-                    yield summary_content[i:i+10]
-                    # 添加一个小延迟以模拟流式效果
-                    import asyncio
-                    await asyncio.sleep(0.01)
-            else:
-                # 如果是其他异常，重新抛出
-                raise
+            # 处理其他异常
+            print(f"捕获到异常: {type(e).__name__}: {e}")
+            raise
 
 # 主程序入口（用于测试对话记忆功能）
 if __name__ == '__main__':
