@@ -5,14 +5,6 @@ import markdown
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
 
-# 实例化我们的新闻通讯代理
-# 在生产环境中，您可能希望以更有效的方式管理此实例
-try:
-    agent = NewsletterAgent()
-except ValueError as e:
-    print(f"启动错误: {e}")
-    agent = None
-
 # 2. 定义主页路由
 @app.route('/')
 def index():
@@ -23,16 +15,17 @@ def index():
 @app.route('/generate', methods=['POST'])
 def generate():
     """处理表单提交，调用代理生成新闻通讯"""
-    if agent is None:
-        # 如果代理未能初始化，显示错误信息
-        return "错误：新闻代理未能启动，请检查您的 API 密钥配置。", 500
-
-    # 从表单获取用户输入的主题
+    # 从表单获取用户输入
     topic = request.form.get('topic')
+    model_choice = request.form.get('model', 'openai') # 默认为 openai
+
     if not topic:
         return "错误：请输入一个主题。", 400
 
     try:
+        # 根据用户选择动态创建代理实例
+        agent = NewsletterAgent(model_provider=model_choice)
+        
         # 调用代理生成内容
         # 注意：这是一个耗时操作，在生产应用中应使用异步任务队列（如 Celery）
         content = agent.generate_newsletter(topic)
@@ -43,8 +36,12 @@ def generate():
         # 渲染结果页面
         return render_template('newsletter.html', topic=topic, content=html_content)
     
+    except ValueError as e:
+        # 捕获 API 密钥缺失等配置错误
+        print(f"配置错误: {e}")
+        return f"错误: {e}", 500
     except Exception as e:
-        # 捕获代理执行过程中可能出现的任何错误
+        # 捕获代理执行过程中可能出现的任何其他错误
         print(f"生成新闻时出错: {e}")
         return f"生成新闻时发生错误: {e}", 500
 
