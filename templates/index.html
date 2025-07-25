@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新闻通讯生成器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>新闻通讯生成器</h1>
+        <p>输入一个您感兴趣的主题，我们的 AI 代理将为您搜集信息并生成一份专属新闻通讯。</p>
+        <form action="/generate" method="post">
+            <input type="text" name="topic" placeholder="例如：量子计算的最新进展" required>
+            <button type="submit">开始生成</button>
+        </form>
+    </div>
+</body>
+</html>
