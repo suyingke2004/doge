@@ -5,6 +5,7 @@ from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
 from tools import news_tools
+from tools.reddit_search import reddit_search_tool
 
 # 加载环境变量
 load_dotenv()
@@ -60,7 +61,8 @@ class NewsletterAgent:
         # 2. 定义工具集
         self.tools = [
             news_tools.search_news,
-            news_tools.scrape_article_content
+            news_tools.scrape_article_content,
+            reddit_search_tool.search_reddit
         ]
 
         # 3. 创建包含聊天记录占位符的提示模板
