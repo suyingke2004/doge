@@ -15,8 +15,15 @@ app.secret_key = os.urandom(24)
 # 2. 定义主页路由
 @app.route('/')
 def index():
-    """渲染主页，提供开始新对话的选项"""
-    return render_template('index.html')
+    """渲染聊天界面，用户可以直接开始对话"""
+    # 准备用于渲染模板的数据
+    chat_history_to_render = session.get('chat_history', [])
+    # 将 Markdown 转换为 HTML
+    for message in chat_history_to_render:
+        if message['type'] == 'ai':
+            message['content_html'] = markdown.markdown(message['content'])
+            
+    return render_template('chat.html', chat_history=chat_history_to_render)
 
 # 3. 定义开始新对话的路由
 @app.route('/new')

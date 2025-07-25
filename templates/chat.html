@@ -9,6 +9,8 @@
 <body>
     <div class="container">
         <h1>新闻对话</h1>
+        
+        <!-- 显示聊天历史 -->
         <div class="chat-window" id="chat-window">
             {% for message in chat_history %}
                 {% if message.type == 'human' %}
@@ -24,86 +26,219 @@
             {% endfor %}
         </div>
 
+        <!-- 如果没有聊天历史，显示模型选择表单 -->
+        {% if not chat_history %}
+        <div id="model-selection" class="model-selection">
+            <p>选择模型提供商和模型名称开始对话：</p>
+            <form id="model-form" class="model-form">
+                <div class="form-group">
+                    <label for="model-provider">选择模型提供商</label>
+                    <select name="model_provider" id="model-provider">
+                        <option value="deepseek" selected>DeepSeek</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="zhipu">Zhipu AI</option>
+                        <option value="ali">Alibaba Cloud</option>
+                        <option value="moonshot">Moonshot AI</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="model-name">模型名称（可选，留空使用默认模型）</label>
+                    <input type="text" id="model-name" name="model_name" placeholder="例如：deepseek-chat, gpt-4o, glm-4">
+                </div>
+                
+                <div class="form-group">
+                    <label for="topic-input">输入起始主题</label>
+                    <input type="text" id="topic-input" name="topic" placeholder="例如：量子计算的最新进展" required>
+                </div>
+                
+                <button type="submit">开始对话</button>
+            </form>
+        </div>
+        
+        <!-- 隐藏的聊天表单 -->
+        <form id="chat-form" class="chat-form" style="display: none;">
+            <input type="text" id="chat-topic-input" name="topic" placeholder="继续提问..." required>
+            <input type="hidden" name="model_provider" id="chat-model-provider">
+            <input type="hidden" name="model_name" id="chat-model-name">
+            <button type="submit">发送</button>
+        </form>
+        {% else %}
+        <!-- 如果有聊天历史，只显示聊天表单 -->
         <form id="chat-form" class="chat-form">
-            <input type="text" id="topic-input" name="topic" placeholder="继续提问..." required>
+            <input type="text" id="chat-topic-input" name="topic" placeholder="继续提问..." required>
             <input type="hidden" name="model_provider" value="{{ session.get('model_provider', 'deepseek') }}">
             {% if session.get('model_name') %}
             <input type="hidden" name="model_name" value="{{ session.get('model_name') }}">
             {% endif %}
             <button type="submit">发送</button>
         </form>
+        {% endif %}
 
         <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const modelForm = document.getElementById('model-form');
             const chatForm = document.getElementById('chat-form');
-            const topicInput = document.getElementById('topic-input');
+            const topicInput = document.getElementById('topic-input') || document.getElementById('chat-topic-input');
             const chatWindow = document.getElementById('chat-window');
-
-            chatForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const topic = topicInput.value;
-                if (!topic.trim()) return;
-                
-                // 添加用户消息到聊天窗口
-                const userMessageDiv = document.createElement('div');
-                userMessageDiv.className = 'chat-message user-message';
-                userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
-                chatWindow.appendChild(userMessageDiv);
-                
-                // 清空输入框
-                topicInput.value = '';
-                
-                // 创建AI消息容器
-                const aiMessageDiv = document.createElement('div');
-                aiMessageDiv.className = 'chat-message ai-message';
-                aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
-                chatWindow.appendChild(aiMessageDiv);
-                
-                const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
-                
-                // 滚动到底部
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-                
-                try {
-                    // 发送请求到流式端点
-                    const response = await fetch('/chat_stream', {
-                        method: 'POST',
-                        body: new FormData(chatForm),
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
+            const modelProviderSelect = document.getElementById('model-provider');
+            const modelNameInput = document.getElementById('model-name');
+            
+            // 预设各提供商的默认模型名称
+            const defaultModels = {
+                'deepseek': 'deepseek-chat',
+                'openai': 'gpt-4o',
+                'zhipu': 'glm-4',
+                'ali': 'qwen-max',
+                'moonshot': 'moonshot-v1-8k'
+            };
+            
+            // 当提供商改变时，更新模型名称输入框的占位符文本
+            if (modelProviderSelect && modelNameInput) {
+                modelProviderSelect.addEventListener('change', function() {
+                    const provider = this.value;
+                    modelNameInput.placeholder = `例如：${defaultModels[provider] || '输入模型名称'}`;
+                });
+            }
+            
+            // 处理模型选择表单提交
+            if (modelForm) {
+                modelForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(modelForm);
+                    const topic = formData.get('topic');
+                    const modelProvider = formData.get('model_provider');
+                    const modelName = formData.get('model_name');
+                    
+                    if (!topic.trim()) return;
+                    
+                    // 添加用户消息到聊天窗口
+                    const userMessageDiv = document.createElement('div');
+                    userMessageDiv.className = 'chat-message user-message';
+                    userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
+                    chatWindow.appendChild(userMessageDiv);
+                    
+                    // 创建AI消息容器
+                    const aiMessageDiv = document.createElement('div');
+                    aiMessageDiv.className = 'chat-message ai-message';
+                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
+                    chatWindow.appendChild(aiMessageDiv);
+                    
+                    const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                    
+                    // 滚动到底部
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    
+                    // 隐藏模型选择表单，显示聊天表单
+                    document.getElementById('model-selection').style.display = 'none';
+                    chatForm.style.display = 'block';
+                    
+                    // 设置聊天表单的隐藏字段
+                    document.getElementById('chat-model-provider').value = modelProvider;
+                    if (modelName) {
+                        document.getElementById('chat-model-name').value = modelName;
+                    }
+                    
+                    try {
+                        // 发送请求到聊天端点
+                        const response = await fetch('/chat', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
                         }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        
+                        const text = await response.text();
+                        
+                        // 解析响应并更新聊天窗口
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(text, 'text/html');
+                        const newChatWindow = doc.querySelector('.chat-window');
+                        
+                        if (newChatWindow) {
+                            chatWindow.innerHTML = newChatWindow.innerHTML;
+                        }
+                        
+                        // 清空输入框
+                        topicInput.value = '';
+                    } catch (error) {
+                        console.error('Error:', error);
+                        aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
                     }
+                });
+            }
+            
+            // 处理聊天表单提交
+            if (chatForm) {
+                chatForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
                     
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder('utf-8');
-                    let accumulatedText = '';
+                    const topic = topicInput.value;
+                    if (!topic.trim()) return;
                     
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
+                    // 添加用户消息到聊天窗口
+                    const userMessageDiv = document.createElement('div');
+                    userMessageDiv.className = 'chat-message user-message';
+                    userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
+                    chatWindow.appendChild(userMessageDiv);
+                    
+                    // 清空输入框
+                    topicInput.value = '';
+                    
+                    // 创建AI消息容器
+                    const aiMessageDiv = document.createElement('div');
+                    aiMessageDiv.className = 'chat-message ai-message';
+                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
+                    chatWindow.appendChild(aiMessageDiv);
+                    
+                    const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                    
+                    // 滚动到底部
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                    
+                    try {
+                        // 发送请求到流式端点
+                        const response = await fetch('/chat_stream', {
+                            method: 'POST',
+                            body: new FormData(chatForm),
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
                         
-                        const chunk = decoder.decode(value, { stream: true });
-                        accumulatedText += chunk;
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
                         
-                        // 更新AI响应
-                        aiResponseDiv.textContent = accumulatedText;
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder('utf-8');
+                        let accumulatedText = '';
                         
-                        // 滚动到底部
-                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            
+                            const chunk = decoder.decode(value, { stream: true });
+                            accumulatedText += chunk;
+                            
+                            // 更新AI响应
+                            aiResponseDiv.textContent = accumulatedText;
+                            
+                            // 滚动到底部
+                            chatWindow.scrollTop = chatWindow.scrollHeight;
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                    aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
-                }
-            });
+                });
+            }
         });
     </script>
 </body>
