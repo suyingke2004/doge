@@ -36,12 +36,18 @@ def chat():
         
         # 如果是新对话，获取模型选择并存入 session
         if 'chat_history' not in session:
-            model_choice = request.form.get('model', 'openai')
-            session['model_choice'] = model_choice
+            model_provider = request.form.get('model_provider', 'deepseek')
+            model_name = request.form.get('model_name', '').strip()
+            # 如果没有提供模型名称，则使用空字符串表示使用默认模型
+            model_name = model_name if model_name else None
+            
+            session['model_provider'] = model_provider
+            session['model_name'] = model_name
             session['chat_history'] = []
         else:
             # 对于已存在的对话，从 session 中获取模型选择
-            model_choice = session['model_choice']
+            model_provider = session['model_provider']
+            model_name = session['model_name']
 
         if not user_input:
             return "错误：请输入一个主题或问题。", 400
@@ -53,7 +59,7 @@ def chat():
 
         try:
             # 创建代理实例，并传入历史记录
-            agent = NewsletterAgent(model_provider=model_choice, chat_history=chat_history_messages)
+            agent = NewsletterAgent(model_provider=model_provider, model_name=model_name, chat_history=chat_history_messages)
             
             # 调用代理生成内容
             ai_response = agent.generate_newsletter(user_input)
@@ -96,10 +102,16 @@ def chat_stream():
         # 如果是新对话，获取模型选择并存入 session
         # 对于已存在的对话，从 session 中获取模型选择
         if 'chat_history' not in session:
-            model_choice = request.form.get('model', 'openai')
-            session['model_choice'] = model_choice
+            model_provider = request.form.get('model_provider', 'deepseek')
+            model_name = request.form.get('model_name', '').strip()
+            # 如果没有提供模型名称，则使用空字符串表示使用默认模型
+            model_name = model_name if model_name else None
+            
+            session['model_provider'] = model_provider
+            session['model_name'] = model_name
         else:
-            model_choice = session.get('model_choice', 'openai')
+            model_provider = session.get('model_provider', 'deepseek')
+            model_name = session.get('model_name', None)
 
         # 更宽松的输入验证 - 只有当输入为 None 时才报错
         if user_input is None:
@@ -118,7 +130,7 @@ def chat_stream():
 
         try:
             # 创建代理实例，并传入历史记录
-            agent = NewsletterAgent(model_provider=model_choice, chat_history=chat_history_messages)
+            agent = NewsletterAgent(model_provider=model_provider, model_name=model_name, chat_history=chat_history_messages)
             
             # 使用流式方式调用代理生成内容
             full_response = ""

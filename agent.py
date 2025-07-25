@@ -9,18 +9,49 @@ from tools import news_tools
 # 加载环境变量
 load_dotenv()
 
+# 定义常见的模型提供商和默认模型
+MODEL_PROVIDERS = {
+    "openai": {
+        "name": "OpenAI",
+        "default_model": "gpt-4o",
+        "base_url": None
+    },
+    "deepseek": {
+        "name": "DeepSeek",
+        "default_model": "deepseek-chat",
+        "base_url": "https://api.deepseek.com/v1"
+    },
+    "zhipu": {
+        "name": "Zhipu AI",
+        "default_model": "glm-4",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4/"
+    },
+    "ali": {
+        "name": "Alibaba Cloud",
+        "default_model": "qwen-max",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    },
+    "moonshot": {
+        "name": "Moonshot AI",
+        "default_model": "moonshot-v1-8k",
+        "base_url": "https://api.moonshot.cn/v1"
+    }
+}
+
 class NewsletterAgent:
     """
     一个能够研究主题并生成新闻通讯的AI代理。
     现在支持对话记忆和流式输出。
     """
-    def __init__(self, model_provider: str = "openai", chat_history: list = None):
+    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None):
         """
         初始化代理。
-        :param model_provider: 要使用的语言模型提供商 ('openai' 或 'deepseek')。
+        :param model_provider: 要使用的语言模型提供商。
+        :param model_name: 要使用的具体模型名称，如果未提供则使用默认模型。
         :param chat_history: 一个包含对话历史的列表。
         """
         self.model_provider = model_provider
+        self.model_name = model_name
         self.chat_history = chat_history or []
         self._configure_llm()
 
@@ -56,29 +87,33 @@ class NewsletterAgent:
 
     def _configure_llm(self):
         """根据选择的提供商配置语言模型"""
-        if self.model_provider == "openai":
-            api_key = os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise ValueError("未找到 OPENAI_API_KEY，请在 .env 文件中配置。")
-            self.llm = ChatOpenAI(
-                model="gpt-4o",
-                temperature=0.7,
-                max_tokens=4096,
-                api_key=api_key
-            )
-        elif self.model_provider == "deepseek":
-            api_key = os.getenv("DEEPSEEK_API_KEY")
-            if not api_key:
-                raise ValueError("未找到 DEEPSEEK_API_KEY，请在 .env 文件中配置。")
-            self.llm = ChatOpenAI(
-                model="deepseek-chat",
-                temperature=0.7,
-                max_tokens=4096,
-                api_key=api_key,
-                base_url="https://api.deepseek.com/v1"
-            )
-        else:
+        # 获取提供商信息
+        provider_info = MODEL_PROVIDERS.get(self.model_provider)
+        if not provider_info:
             raise ValueError(f"不支持的模型提供商: {self.model_provider}")
+            
+        # 获取API密钥
+        api_key_env_var = f"{self.model_provider.upper()}_API_KEY"
+        api_key = os.getenv(api_key_env_var)
+        if not api_key:
+            raise ValueError(f"未找到 {api_key_env_var}，请在 .env 文件中配置。")
+            
+        # 确定模型名称
+        model = self.model_name if self.model_name else provider_info["default_model"]
+        
+        # 配置LLM
+        llm_kwargs = {
+            "model": model,
+            "temperature": 0.7,
+            "max_tokens": 4096,
+            "api_key": api_key
+        }
+        
+        # 如果有base_url，添加到配置中
+        if provider_info["base_url"]:
+            llm_kwargs["base_url"] = provider_info["base_url"]
+            
+        self.llm = ChatOpenAI(**llm_kwargs)
 
     def generate_newsletter(self, topic: str) -> str:
         """

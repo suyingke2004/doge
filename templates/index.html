@@ -15,13 +15,23 @@
                 <label for="topic-input">输入起始主题</label>
                 <input type="text" id="topic-input" name="topic" placeholder="例如：量子计算的最新进展" required>
             </div>
+            
             <div class="form-group">
-                <label for="model-select">选择语言模型</label>
-                <select name="model" id="model-select">
-                    <option value="openai">OpenAI (GPT-4o)</option>
-                    <option value="deepseek">DeepSeek (DeepSeek-Chat)</option>
+                <label for="model-provider">选择模型提供商</label>
+                <select name="model_provider" id="model-provider">
+                    <option value="deepseek" selected>DeepSeek</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="zhipu">Zhipu AI</option>
+                    <option value="ali">Alibaba Cloud</option>
+                    <option value="moonshot">Moonshot AI</option>
                 </select>
             </div>
+            
+            <div class="form-group">
+                <label for="model-name">模型名称（可选，留空使用默认模型）</label>
+                <input type="text" id="model-name" name="model_name" placeholder="例如：gpt-4o, glm-4, qwen-max">
+            </div>
+            
             <button type="submit">开始对话</button>
         </form>
     </div>
@@ -30,6 +40,24 @@
         // 添加一个简单的脚本来确保表单提交后能正确处理
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.querySelector('form');
+            const providerSelect = document.getElementById('model-provider');
+            const modelNameInput = document.getElementById('model-name');
+            
+            // 预设各提供商的默认模型名称
+            const defaultModels = {
+                'deepseek': 'deepseek-chat',
+                'openai': 'gpt-4o',
+                'zhipu': 'glm-4',
+                'ali': 'qwen-max',
+                'moonshot': 'moonshot-v1-8k'
+            };
+            
+            // 当提供商改变时，更新模型名称输入框的占位符文本
+            providerSelect.addEventListener('change', function() {
+                const provider = this.value;
+                modelNameInput.placeholder = `例如：${defaultModels[provider] || '输入模型名称'}`;
+            });
+            
             form.addEventListener('submit', function(e) {
                 // 表单会正常提交到/chat端点，第一次对话仍然使用非流式方式
                 // 后续对话会使用/chat_stream端点（在chat.html中处理）
