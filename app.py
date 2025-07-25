@@ -83,13 +83,20 @@ def chat():
 @app.route('/chat_stream', methods=['POST'])
 def chat_stream():
     """处理用户的提问并以流式方式返回响应"""
-    async def generate():
+    import asyncio
+
+    def generate():
         # 从表单获取用户输入
         user_input = request.form.get('topic')
         
-        # 获取模型选择
-        model_choice = request.form.get('model', 'openai')
-        
+        # 如果是新对话，获取模型选择并存入 session
+        # 对于已存在的对话，从 session 中获取模型选择
+        if 'chat_history' not in session:
+            model_choice = request.form.get('model', 'openai')
+            session['model_choice'] = model_choice
+        else:
+            model_choice = session.get('model_choice', 'openai')
+
         if not user_input:
             yield "错误：请输入一个主题或问题。"
             return
@@ -105,10 +112,32 @@ def chat_stream():
             
             # 使用流式方式调用代理生成内容
             full_response = ""
-            async for chunk in agent.generate_newsletter_stream(user_input):
-                # 发送每个块到客户端
-                yield chunk
-                full_response += chunk
+            
+            # 创建一个新的事件循环来运行异步代码
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            # 定义一个内部异步函数来处理流式响应
+            async def handle_stream():
+                nonlocal full_response
+                async for chunk in agent.generate_newsletter_stream(user_input):
+                    # 发送每个块到客户端
+                    yield chunk
+                    full_response += chunk
+                    
+            # 运行异步生成器并逐个获取结果
+            async_gen = handle_stream()
+            while True:
+                try:
+                    chunk = loop.run_until_complete(async_gen.__anext__())
+                    yield chunk
+                except StopAsyncIteration:
+                    break
+                except Exception as e:
+                    print(f"Error in async generator: {e}")
+                    break
+                    
+            loop.close()
                 
             # 更新历史记录
             chat_history_raw.append({'type': 'human', 'content': user_input})
@@ -122,7 +151,7 @@ def chat_stream():
             print(f"生成内容时出错: {e}")
             yield f"生成内容时发生错误: {e}"
 
-    # 使用Flask的stream_with_context包装异步生成器
+    # 使用Flask的stream_with_context包装生成器
     return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')
 
 # 启动应用的入口

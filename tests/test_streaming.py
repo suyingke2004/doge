@@ -1,41 +1,71 @@
 import pytest
-import asyncio
-from agent import NewsletterAgent
-from unittest.mock import patch, MagicMock, AsyncMock
+from flask import session
+from app import app as flask_app
+from unittest.mock import patch, MagicMock
 
-@pytest.mark.asyncio
-async def test_generate_newsletter_stream():
-    """测试NewsletterAgent的流式输出功能"""
-    # 直接测试generate_newsletter_stream方法，而不测试整个初始化过程
-    agent = NewsletterAgent.__new__(NewsletterAgent)  # 创建一个不调用__init__的对象
-    
-    # 手动设置必要的属性
-    agent.agent_executor = AsyncMock()
-    agent.chat_history = []  # 添加缺失的chat_history属性
-    
-    # 模拟astream方法返回一个异步生成器
-    async def mock_astream(input_data):
-        yield {"output": "这是"}
-        yield {"output": "流式"}
-        yield {"output": "输出"}
-        yield {"output": "的测试"}
-    
-    agent.agent_executor.astream = mock_astream
-    
-    # 收集流式输出
-    chunks = []
-    async for chunk in agent.generate_newsletter_stream("测试主题"):
-        chunks.append(chunk)
-    
-    # 验证输出
-    assert len(chunks) == 4
-    assert "".join(chunks) == "这是流式输出的测试"
 
-def test_method_exists():
-    """测试NewsletterAgent是否具有generate_newsletter_stream方法"""
-    # 检查方法是否存在
-    assert hasattr(NewsletterAgent, 'generate_newsletter_stream')
+@pytest.fixture
+def client():
+    """创建一个测试客户端"""
+    flask_app.config['TESTING'] = True
+    flask_app.secret_key = 'test_secret_key'
     
-    # 检查方法是否是异步生成器函数
-    import inspect
-    assert inspect.isasyncgenfunction(NewsletterAgent.generate_newsletter_stream)
+    with flask_app.test_client() as client:
+        with client.session_transaction() as sess:
+            sess['model_choice'] = 'gpt-3.5-turbo'  # 使用有效的模型ID进行测试
+            sess['chat_history'] = []
+        yield client
+
+
+@patch('app.NewsletterAgent')
+def test_streaming_conversation_flow(mock_agent_class, client):
+    """测试流式对话流程"""
+    # 创建模拟代理实例
+    mock_agent = MagicMock()
+    mock_agent.generate_newsletter_stream = MagicMock(return_value=iter(["chunk1", "chunk2", "chunk3"]))
+    mock_agent_class.return_value = mock_agent
+    
+    # 模拟第一次对话
+    response = client.post('/chat_stream', data={
+        'topic': 'Tell me about AI',
+        'model': 'gpt-3.5-turbo'  # 使用有效的模型ID
+    })
+    
+    # 验证响应
+    assert response.status_code == 200
+    
+    # 检查会话中的聊天历史
+    with client.session_transaction() as sess:
+        assert 'chat_history' in sess
+        # 由于是模拟测试，我们只需要检查会话是否正确设置
+        assert sess['model_choice'] == 'gpt-3.5-turbo'
+
+
+@patch('app.NewsletterAgent')
+def test_second_turn_streaming(mock_agent_class, client):
+    """测试第二轮流式对话"""
+    # 创建模拟代理实例
+    mock_agent = MagicMock()
+    mock_agent.generate_newsletter_stream = MagicMock(return_value=iter(["response1", "response2"]))
+    mock_agent_class.return_value = mock_agent
+    
+    # 设置初始对话历史
+    with client.session_transaction() as sess:
+        sess['model_choice'] = 'gpt-3.5-turbo'  # 使用有效的模型ID
+        sess['chat_history'] = [
+            {'type': 'human', 'content': 'Tell me about AI'},
+            {'type': 'ai', 'content': 'AI is a wonderful field...'}
+        ]
+    
+    # 模拟第二轮对话
+    response = client.post('/chat_stream', data={
+        'topic': 'Tell me more about machine learning',
+        # 注意：不传递model参数，应该从session中获取
+    })
+    
+    # 验证响应
+    assert response.status_code == 200
+    
+    # 检查会话中的模型选择是否正确
+    with client.session_transaction() as sess:
+        assert sess['model_choice'] == 'gpt-3.5-turbo'

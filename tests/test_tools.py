@@ -1,42 +1,81 @@
 import unittest
-import sys
-import os
-
-# 将项目根目录添加到 Python 路径中，以便导入模块
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from unittest.mock import patch, MagicMock
 from tools import news_tools
 
-class TestNewsTools(unittest.TestCase):
 
-    def test_search_news_success(self):
+class TestNewsTools(unittest.TestCase):
+    """测试 NewsTools 类中的工具函数"""
+
+    @patch('tools.NewsApiClient')
+    def test_search_news_success(self, mock_newsapi_client):
         """测试 search_news 函数是否能成功返回新闻"""
+        # 模拟 NewsApiClient 的行为
+        mock_api_instance = MagicMock()
+        mock_newsapi_client.return_value = mock_api_instance
+        
+        # 模拟 get_everything 的返回值
+        mock_api_instance.get_everything.return_value = {
+            'articles': [
+                {
+                    'title': 'Test News Article 1',
+                    'url': 'https://example.com/article1'
+                },
+                {
+                    'title': 'Test News Article 2',
+                    'url': 'https://example.com/article2'
+                }
+            ]
+        }
+        
         query = "科技"
         result = news_tools.search_news(query)
-
-        # 打印结果以供调试
-        print(f"\n--- 测试查询: '{query}' ---")
-        print(f"返回结果: {result[:200]}...") # 打印部分结果
-
-        # 断言结果不是预期的失败消息
-        self.assertNotIn("没有找到相关的新闻。", result)
-        self.assertNotIn("获取新闻时出错", result)
-
-        # 断言结果中包含预期的内容格式
-        self.assertIn("标题:", result)
-        self.assertIn("链接:", result)
+        
+        # 验证 NewsApiClient 被正确调用
+        mock_newsapi_client.assert_called_once()
+        mock_api_instance.get_everything.assert_called_once_with(
+            q=query,
+            language='zh',
+            sort_by='relevancy'
+        )
+        
+        # 断言结果包含预期的内容
+        self.assertIn("Test News Article 1", result)
+        self.assertIn("https://example.com/article1", result)
+        self.assertIn("Test News Article 2", result)
+        self.assertIn("https://example.com/article2", result)
 
     def test_search_news_empty_query(self):
-        """测试当查询为空时 search_news 函数的行为"""
+        """测试 search_news 函数处理空查询的情况"""
         query = ""
         result = news_tools.search_news(query)
+        
+        # 断言返回适当的错误消息
+        self.assertEqual(result, "没有找到相关的新闻。")
+        
+        # 测试只包含空格的查询
+        query = "   "
+        result = news_tools.search_news(query)
+        self.assertEqual(result, "没有找到相关的新闻。")
 
-        print(f"\n--- 测试空查询 ---")
-        print(f"返回结果: {result}")
+    @patch('tools.Article')
+    def test_scrape_article_content(self, mock_article_class):
+        """测试 scrape_article_content 函数"""
+        # 模拟 Article 的行为
+        mock_article = MagicMock()
+        mock_article_class.return_value = mock_article
+        mock_article.text = "This is a test article content."
+        
+        url = "https://www.example.com/"
+        result = news_tools.scrape_article_content(url)
+        
+        # 验证 Article 被正确调用
+        mock_article_class.assert_called_once_with(url)
+        mock_article.download.assert_called_once()
+        mock_article.parse.assert_called_once()
+        
+        # 断言返回了正确的文章内容
+        self.assertEqual(result, "This is a test article content.")
 
-        # 对于空查询，API 可能会返回错误或空结果，我们期望它能优雅地处理
-        # 在这种情况下，返回“没有找到相关的新闻。”是可接受的
-        self.assertIn("没有找到相关的新闻。", result)
 
 if __name__ == '__main__':
     unittest.main()
