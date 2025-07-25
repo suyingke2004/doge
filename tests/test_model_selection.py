@@ -19,11 +19,15 @@ def test_model_selection_with_provider_and_model_name(mock_agent_class, client):
     mock_agent = MagicMock()
     mock_agent_class.return_value = mock_agent
     
-    # 模拟 generate_newsletter 方法的返回值
-    mock_agent.generate_newsletter.return_value = "# 测试响应\n这是测试内容"
+    # 模拟流式响应
+    async def mock_stream_generator(_):
+        yield "# 测试响应\n"
+        yield "这是测试内容"
+    
+    mock_agent.generate_newsletter_stream = mock_stream_generator
     
     # 使用提供商和模型名称进行第一次对话
-    response = client.post('/chat', data={
+    response = client.post('/chat_stream', data={
         'topic': 'AI技术发展',
         'model_provider': 'openai',
         'model_name': 'gpt-4'
@@ -36,7 +40,8 @@ def test_model_selection_with_provider_and_model_name(mock_agent_class, client):
     mock_agent_class.assert_called_with(
         model_provider='openai',
         model_name='gpt-4',
-        chat_history=[]
+        chat_history=[],
+        max_iterations=5
     )
 
 
@@ -47,11 +52,15 @@ def test_model_selection_with_provider_only(mock_agent_class, client):
     mock_agent = MagicMock()
     mock_agent_class.return_value = mock_agent
     
-    # 模拟 generate_newsletter 方法的返回值
-    mock_agent.generate_newsletter.return_value = "# 测试响应\n这是测试内容"
+    # 模拟流式响应
+    async def mock_stream_generator(_):
+        yield "# 测试响应\n"
+        yield "这是测试内容"
+    
+    mock_agent.generate_newsletter_stream = mock_stream_generator
     
     # 仅使用提供商进行第一次对话（不提供模型名称）
-    response = client.post('/chat', data={
+    response = client.post('/chat_stream', data={
         'topic': 'AI技术发展',
         'model_provider': 'deepseek'
     })
@@ -63,5 +72,6 @@ def test_model_selection_with_provider_only(mock_agent_class, client):
     mock_agent_class.assert_called_with(
         model_provider='deepseek',
         model_name=None,
-        chat_history=[]
+        chat_history=[],
+        max_iterations=5
     )

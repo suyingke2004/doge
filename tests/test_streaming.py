@@ -12,7 +12,9 @@ def client():
     
     with flask_app.test_client() as client:
         with client.session_transaction() as sess:
-            sess['model_choice'] = 'gpt-3.5-turbo'  # 使用有效的模型ID进行测试
+            sess['model_provider'] = 'openai'
+            sess['model_name'] = 'gpt-3.5-turbo'
+            sess['maxiter'] = 5
             sess['chat_history'] = []
         yield client
 
@@ -28,7 +30,8 @@ def test_streaming_conversation_flow(mock_agent_class, client):
     # 模拟第一次对话
     response = client.post('/chat_stream', data={
         'topic': 'Tell me about AI',
-        'model': 'gpt-3.5-turbo'  # 使用有效的模型ID
+        'model_provider': 'openai',
+        'model_name': 'gpt-3.5-turbo'
     })
     
     # 验证响应
@@ -38,7 +41,8 @@ def test_streaming_conversation_flow(mock_agent_class, client):
     with client.session_transaction() as sess:
         assert 'chat_history' in sess
         # 由于是模拟测试，我们只需要检查会话是否正确设置
-        assert sess['model_choice'] == 'gpt-3.5-turbo'
+        assert sess['model_provider'] == 'openai'
+        assert sess['model_name'] == 'gpt-3.5-turbo'
 
 
 @patch('app.NewsletterAgent')
@@ -51,7 +55,9 @@ def test_second_turn_streaming(mock_agent_class, client):
     
     # 设置初始对话历史
     with client.session_transaction() as sess:
-        sess['model_choice'] = 'gpt-3.5-turbo'  # 使用有效的模型ID
+        sess['model_provider'] = 'openai'
+        sess['model_name'] = 'gpt-3.5-turbo'
+        sess['maxiter'] = 5
         sess['chat_history'] = [
             {'type': 'human', 'content': 'Tell me about AI'},
             {'type': 'ai', 'content': 'AI is a wonderful field...'}
@@ -68,4 +74,5 @@ def test_second_turn_streaming(mock_agent_class, client):
     
     # 检查会话中的模型选择是否正确
     with client.session_transaction() as sess:
-        assert sess['model_choice'] == 'gpt-3.5-turbo'
+        assert sess['model_provider'] == 'openai'
+        assert sess['model_name'] == 'gpt-3.5-turbo'

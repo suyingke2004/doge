@@ -43,16 +43,18 @@ class NewsletterAgent:
     一个能够研究主题并生成新闻通讯的AI代理。
     现在支持对话记忆和流式输出。
     """
-    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None):
+    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None, max_iterations: int = 5):
         """
         初始化代理。
         :param model_provider: 要使用的语言模型提供商。
         :param model_name: 要使用的具体模型名称，如果未提供则使用默认模型。
         :param chat_history: 一个包含对话历史的列表。
+        :param max_iterations: 代理执行的最大迭代次数。
         """
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
+        self.max_iterations = max_iterations
         self._configure_llm()
 
         # 2. 定义工具集
@@ -82,7 +84,7 @@ class NewsletterAgent:
             tools=self.tools,
             verbose=True,
             handle_parsing_errors=True,
-            max_iterations=5
+            max_iterations=self.max_iterations
         )
 
     def _configure_llm(self):
@@ -129,21 +131,48 @@ class NewsletterAgent:
         """
         根据给定主题和对话历史生成回应，并以流式方式返回。
         """
-        async for chunk in self.agent_executor.astream({
-            "input": topic,
-            "chat_history": self.chat_history
-        }):
-            # 只返回最终输出的流，忽略中间步骤
-            if "output" in chunk:
-                yield chunk["output"]
-            elif "actions" in chunk:
-                # 这里可以处理工具调用的流式输出（如果需要显示工具调用过程）
-                # 暂时我们只关注最终输出
-                pass
-            elif "steps" in chunk:
-                # 这里可以处理中间步骤的流式输出（如果需要显示推理过程）
-                # 暂时我们只关注最终输出
-                pass
+        try:
+            async for chunk in self.agent_executor.astream({
+                "input": topic,
+                "chat_history": self.chat_history
+            }):
+                # 只返回最终输出的流，忽略中间步骤
+                if "output" in chunk:
+                    yield chunk["output"]
+                elif "actions" in chunk:
+                    # 这里可以处理工具调用的流式输出（如果需要显示工具调用过程）
+                    # 暂时我们只关注最终输出
+                    pass
+                elif "steps" in chunk:
+                    # 这里可以处理中间步骤的流式输出（如果需要显示推理过程）
+                    # 暂时我们只关注最终输出
+                    pass
+        except Exception as e:
+            # 检查是否是因为达到最大迭代次数而导致的异常
+            if "max iterations" in str(e).lower() or "maximum iterations" in str(e).lower():
+                # 当达到最大迭代次数时，给出总结性信息
+                summary_msg = "\n\n[已达到最大迭代次数限制，正在为您总结当前已获取的信息...]\n"
+                yield summary_msg
+                
+                # 创建一个简短的总结提示
+                summary_prompt = f"基于以上对话内容，请简洁总结已获取的信息来回答最初的问题：{topic}"
+                
+                # 使用LLM生成总结
+                summary_response = self.llm.invoke([
+                    *self.chat_history,
+                    HumanMessage(content=summary_prompt)
+                ])
+                
+                # 流式输出总结内容
+                summary_content = summary_response.content
+                for i in range(0, len(summary_content), 10):
+                    yield summary_content[i:i+10]
+                    # 添加一个小延迟以模拟流式效果
+                    import asyncio
+                    await asyncio.sleep(0.01)
+            else:
+                # 如果是其他异常，重新抛出
+                raise
 
 # 主程序入口（用于测试对话记忆功能）
 if __name__ == '__main__':

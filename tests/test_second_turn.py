@@ -19,13 +19,17 @@ def test_second_turn_conversation(mock_agent_class, client):
     mock_agent = MagicMock()
     mock_agent_class.return_value = mock_agent
     
-    # 模拟 generate_newsletter 方法的返回值
-    mock_agent.generate_newsletter.return_value = "# 测试响应\n这是测试内容"
+    # 模拟流式响应
+    async def mock_stream_generator():
+        yield "# 测试响应\n"
+        yield "这是测试内容"
+    
+    mock_agent.generate_newsletter_stream = mock_stream_generator
     
     # 第一次对话
-    response = client.post('/chat', data={
+    response = client.post('/chat_stream', data={
         'topic': 'AI技术发展',
-        'model': 'openai'
+        'model_provider': 'openai'
     })
     
     # 检查第一次对话是否成功
@@ -35,12 +39,12 @@ def test_second_turn_conversation(mock_agent_class, client):
     mock_agent.reset_mock()
     
     # 模拟 generate_newsletter_stream 方法的返回值
-    async def mock_stream_generator():
+    async def mock_stream_generator_2():
         yield "这是"
         yield "流式"
         yield "响应"
     
-    mock_agent.generate_newsletter_stream = mock_stream_generator
+    mock_agent.generate_newsletter_stream = mock_stream_generator_2
     
     # 第二次对话 - 流式
     response = client.post('/chat_stream', data={
@@ -55,9 +59,9 @@ def test_second_turn_conversation(mock_agent_class, client):
 def test_empty_input_in_second_turn(client):
     """测试第二次对话中空输入的情况"""
     # 第一次对话
-    response = client.post('/chat', data={
+    response = client.post('/chat_stream', data={
         'topic': '科技新闻',
-        'model': 'openai'
+        'model_provider': 'openai'
     })
     
     # 第二次对话 - 空输入
