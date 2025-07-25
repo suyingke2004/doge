@@ -9,10 +9,10 @@
 <body>
     <div class="container">
         <h1>新闻通讯生成器</h1>
-        <p>输入一个您感兴趣的主题，我们的 AI 代理将为您搜集信息并生成一份专属新闻通讯。</p>
-        <form action="/generate" method="post">
+        <p>输入一个您感兴趣的主题，我们的 AI 代理将为您开启一段对话式的新闻探索之旅。</p>
+        <form action="{{ url_for('chat') }}" method="post">
             <div class="form-group">
-                <label for="topic-input">输入主题</label>
+                <label for="topic-input">输入起始主题</label>
                 <input type="text" id="topic-input" name="topic" placeholder="例如：量子计算的最新进展" required>
             </div>
             <div class="form-group">
@@ -22,7 +22,7 @@
                     <option value="deepseek">DeepSeek (DeepSeek-Chat)</option>
                 </select>
             </div>
-            <button type="submit">开始生成</button>
+            <button type="submit">开始对话</button>
         </form>
     </div>
 </body>

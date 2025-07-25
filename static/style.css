@@ -87,3 +87,58 @@ button:hover {
 .back-link:hover {
     text-decoration: underline;
 }
+
+/* 聊天窗口样式 */
+.chat-window {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #eef2f5;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+
+.chat-message {
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    text-align: right;
+}
+
+.ai-message {
+    background-color: #eef2f5;
+    color: #333;
+    margin-right: auto;
+}
+
+.ai-message p {
+    margin: 0;
+}
+
+.ai-message div {
+    margin-top: 5px;
+}
+
+/* 聊天输入表单 */
+.chat-form {
+    display: flex;
+    flex-direction: row;
+}
+
+.chat-form input[type="text"] {
+    flex-grow: 1;
+    margin-bottom: 0;
+    margin-right: 10px;
+}
+
+.chat-form button {
+    white-space: nowrap;
+}

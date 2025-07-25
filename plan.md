@@ -44,3 +44,20 @@
 *   通过重构代理创建方式，解决了模型输出格式不稳定的核心问题。
 
 最终，我们成功交付了一个功能完整、可交互的原型。
+
+## 最新开发进度
+
+### 1. 多模型支持
+*   实现了在 OpenAI 和 DeepSeek 模型之间切换的功能，用户可以在前端界面选择使用的语言模型。
+*   `agent.py` 中的 `NewsletterAgent` 类现在可以根据选择动态初始化不同的语言模型。
+
+### 2. 搜索工具修复与优化
+*   将 NewsAPI 的 `Search_News` 工具从 `get_top_headlines` 接口更换为 `get_everything`，显著提高了新闻搜索的相关性和成功率。
+*   增加了对空查询的健壮性处理，避免了无效的 API 请求。
+*   新增了 `tests/test_tools.py` 单元测试文件，确保了 `Search_News` 工具的正确性。
+
+### 3. 多轮对话功能
+*   为 AI 代理 (`agent.py`) 增加了对话记忆能力，通过 `chat_history` 管理上下文。
+*   重构了 Web 应用 (`app.py`)，利用 Flask 的 `session` 来持久化聊天历史，实现了用户与代理的持续对话。
+*   更新了前端界面 (`templates/index.html`, `templates/chat.html`, `static/style.css`)，提供了新的聊天界面和交互流程。
+*   将旧的 `templates/newsletter.html` 移动到了 `trash` 目录，并创建了 `templates/chat.html` 作为新的对话页面。

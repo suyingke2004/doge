@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新闻对话</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>新闻对话</h1>
+        <div class="chat-window">
+            {% for message in chat_history %}
+                {% if message.type == 'human' %}
+                    <div class="chat-message user-message">
+                        <p><strong>你:</strong> {{ message.content }}</p>
+                    </div>
+                {% elif message.type == 'ai' %}
+                    <div class="chat-message ai-message">
+                        <p><strong>AI助手:</strong></p>
+                        <div>{{ message.content_html | safe }}</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <form action="{{ url_for('chat') }}" method="post" class="chat-form">
+            <input type="text" name="topic" placeholder="继续提问..." required>
+            <button type="submit">发送</button>
+        </form>
+
+        <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
+    </div>
+</body>
+</html>
