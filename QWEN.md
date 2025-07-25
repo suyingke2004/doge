@@ -73,6 +73,7 @@ The Flask app provides a simple web interface with the following key routes:
 *   Unit tests are located in the `tests/` directory.
 *   Use `pytest` to run the tests.
 *   Write tests for core functionalities, especially for tools and agent logic.
+*   Since you cannot interact with a browser directly, do not use manual browser testing. Instead, use headless browser testing or write more comprehensive integration tests.
 
 ## Future Development
 

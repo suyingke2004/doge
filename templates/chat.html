@@ -26,7 +26,7 @@
 
         <form id="chat-form" class="chat-form">
             <input type="text" id="topic-input" name="topic" placeholder="继续提问..." required>
-            <input type="hidden" id="model-input" name="model" value="{{ request.form.get('model', 'openai') if request.method == 'POST' else 'openai' }}">
+            <input type="hidden" id="model-input" name="model" value="{{ session.get('model_choice', 'openai') }}">
             <button type="submit">发送</button>
         </form>
 

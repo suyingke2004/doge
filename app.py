@@ -89,6 +89,10 @@ def chat_stream():
         # 从表单获取用户输入
         user_input = request.form.get('topic')
         
+        # 打印调试信息
+        print(f"Received form data: {dict(request.form)}")
+        print(f"user_input: '{user_input}'")
+        
         # 如果是新对话，获取模型选择并存入 session
         # 对于已存在的对话，从 session 中获取模型选择
         if 'chat_history' not in session:
@@ -97,7 +101,13 @@ def chat_stream():
         else:
             model_choice = session.get('model_choice', 'openai')
 
-        if not user_input:
+        # 更宽松的输入验证 - 只有当输入为 None 时才报错
+        if user_input is None:
+            yield "错误：请输入一个主题或问题。"
+            return
+            
+        # 如果输入是空字符串，也认为是无效输入
+        if not user_input.strip():
             yield "错误：请输入一个主题或问题。"
             return
 
