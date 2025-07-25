@@ -238,7 +238,9 @@
                     e.preventDefault();
                     console.log('已阻止默认表单提交行为');
                     
-                    const topic = topicInput.value;
+                    // 确保获取到正确的输入框元素
+                    const topicInputElement = document.getElementById('chat-topic-input');
+                    const topic = topicInputElement ? topicInputElement.value : '';
                     console.log('用户输入:', topic);
                     if (!topic || !topic.trim()) {
                         console.log('输入为空，取消提交');
@@ -252,7 +254,9 @@
                     chatWindow.appendChild(userMessageDiv);
                     
                     // 清空输入框
-                    topicInput.value = '';
+                    if (topicInputElement) {
+                        topicInputElement.value = '';
+                    }
                     
                     // 创建AI消息容器
                     const aiMessageDiv = document.createElement('div');
