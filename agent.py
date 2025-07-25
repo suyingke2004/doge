@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from tools import news_tools
 from tools.reddit_search import reddit_search_tool
 from tools.rss_feed import rss_feed_tool
+from tools.content_delivery import content_delivery_tool
 
 # 加载环境变量
 load_dotenv()
@@ -64,12 +65,14 @@ class NewsletterAgent:
             news_tools.search_news,
             news_tools.scrape_article_content,
             reddit_search_tool.search_reddit,
-            rss_feed_tool.search_rss_feeds
+            rss_feed_tool.search_rss_feeds,
+            content_delivery_tool.send_email,
+            content_delivery_tool.export_pdf
         ]
 
         # 3. 创建包含聊天记录占位符的提示模板
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "你是一个强大的新闻研究助理。你的任务是根据用户指定的主题和之前的对话内容，搜集相关信息，并生成一份简洁、引人入胜且信息丰富的新闻通讯或回答。请先使用工具收集信息，然后整合信息并输出最终的报告。"),
+            ("system", "你是一个强大的新闻研究助理。你的任务是根据用户指定的主题和之前的对话内容，搜集相关信息，并生成一份简洁、引人入胜且信息丰富的新闻通讯或回答。请先使用工具收集信息，然后整合信息并输出最终的报告。你还可以帮助用户将生成的内容通过邮件发送或导出为PDF。"),
             MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),

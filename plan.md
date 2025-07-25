@@ -13,6 +13,10 @@
     *   `newspaper3k` (用于抓取和解析网页文章内容)
     *   `praw` (用于访问 Reddit API)
     *   `feedparser` (用于解析 RSS 订阅源)
+    *   `tweepy` (用于访问 Twitter API)
+*   **内容交付:**
+    *   `sendgrid` (用于发送邮件)
+    *   `weasyprint` (用于生成PDF)
 *   **前端:** HTML, CSS
 *   **Markdown 解析:** `Markdown`
 
@@ -33,13 +37,23 @@
     *   提供了 `Search_RSS_Feeds` 工具，用于从 RSS 订阅源获取内容。
     *   使用 `feedparser` 库解析 RSS 订阅源。
 
-4.  **AI代理模块 (`agent.py`)**:
+4.  **Twitter工具模块 (`tools/twitter_search.py`)**:
+    *   提供了 `Search_Twitter` 工具，用于搜索 Twitter 上的相关讨论。
+    *   使用 `tweepy` 库与 Twitter API 交互。
+
+5.  **内容交付工具模块 (`tools/content_delivery.py`)**:
+    *   提供了 `Send_Email` 工具，用于通过邮件发送内容。
+    *   提供了 `Export_PDF` 工具，用于将内容导出为PDF文件。
+    *   使用 `sendgrid` 库发送邮件。
+    *   使用 `weasyprint` 库生成PDF。
+
+6.  **AI代理模块 (`agent.py`)**:
     *   封装了 `NewsletterAgent` 类，负责处理所有 AI 相关的逻辑。
     *   **关键决策**: 使用 `create_openai_tools_agent` 代替了 `create_react_agent`。这个选择极大地提升了代理调用工具的稳定性和可靠性，因为它专门为 OpenAI 的函数调用功能设计。
     *   代理能够根据用户输入，自主地选择并执行工具，并在信息收集完毕后生成最终的报告。
     *   实现了对话记忆功能，支持多轮对话。
 
-5.  **Web应用模块 (`app.py`)**:
+7.  **Web应用模块 (`app.py`)**:
     *   使用 Flask 搭建了一个简单的 Web 服务器。
     *   提供了三个路由：
         *   `/`: 显示一个允许用户输入主题的表单 (`index.html`)。
@@ -122,13 +136,22 @@
 *   集成 RSS 订阅源，现在可以从 RSS 获取内容
 *   添加了 `Search_RSS_Feeds` 工具，进一步丰富了信息来源
 *   更新了依赖列表，使用已有的 `feedparser` 库
+*   集成 Twitter API，现在可以从 Twitter 获取社交媒体讨论
+*   添加了 `Search_Twitter` 工具，进一步丰富了信息来源
+*   更新了依赖列表，添加了 `tweepy` 库
+
+### 6. 内容交付系统
+*   实现了邮件发送功能，用户可以将生成的内容通过邮件发送
+*   实现了PDF导出功能，用户可以将生成的内容导出为PDF文件
+*   添加了 `Send_Email` 和 `Export_PDF` 工具
+*   更新了依赖列表，添加了 `sendgrid` 和 `weasyprint` 库
 
 ## 未来开发计划
 
 ### 1. 扩展数据源
 *   集成 Reddit API 以获取社区讨论和热门话题（已完成）
 *   添加 RSS 订阅源支持，提供更多样化的内容来源（已完成）
-*   考虑集成社交媒体数据源（如 Twitter API）
+*   集成 Twitter API 以获取社交媒体讨论（计划中）
 
 ### 2. 改进用户界面
 *   评估并可能引入 Gradio 作为替代的用户界面选项
@@ -136,8 +159,8 @@
 *   实现响应式设计，优化移动端体验
 
 ### 3. 内容交付系统
-*   实现邮件发送功能，使用 SendGrid 或其他邮件服务按计划发送时事通讯
-*   添加 PDF 导出功能，让用户可以下载生成的内容
+*   实现邮件发送功能，使用 SendGrid 或其他邮件服务按计划发送时事通讯（已完成）
+*   添加 PDF 导出功能，让用户可以下载生成的内容（已完成）
 *   考虑实现 Slack 或 Discord 机器人集成
 
 ### 4. 个性化功能
