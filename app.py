@@ -101,32 +101,36 @@ def chat_stream():
             # 使用流式方式调用代理生成内容
             full_response = ""
             
-            # 创建一个新的事件循环来运行异步代码
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            # 使用 asyncio.run 来处理异步代码（推荐方法）
+            import asyncio
+            import concurrent.futures
             
-            # 定义一个内部异步函数来处理流式响应
-            async def handle_stream():
-                nonlocal full_response
-                async for chunk in agent.generate_newsletter_stream(user_input):
-                    # 发送每个块到客户端
-                    yield chunk
-                    full_response += chunk
-                    
-            # 运行异步生成器并逐个获取结果
-            async_gen = handle_stream()
-            while True:
-                try:
-                    chunk = loop.run_until_complete(async_gen.__anext__())
-                    yield chunk
-                except StopAsyncIteration:
-                    break
-                except Exception as e:
-                    print(f"Error in async generator: {e}")
-                    break
-                    
-            loop.close()
+            def run_async_code():
+                async def handle_stream():
+                    nonlocal full_response
+                    async for chunk in agent.generate_newsletter_stream(user_input):
+                        # 发送每个块到客户端
+                        yield chunk
+                        full_response += chunk
                 
+                async def collect_chunks():
+                    chunks = []
+                    async for chunk in handle_stream():
+                        chunks.append(chunk)
+                    return chunks
+                
+                # 在新事件循环中运行异步代码
+                return asyncio.run(collect_chunks())
+            
+            # 在线程中运行异步代码
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(run_async_code)
+                chunks = future.result()
+                
+                # 逐个发送块
+                for chunk in chunks:
+                    yield chunk
+                    
             # 更新历史记录
             chat_history_raw.append({'type': 'human', 'content': user_input})
             chat_history_raw.append({'type': 'ai', 'content': full_response})
