@@ -240,7 +240,7 @@
                     
                     const topic = topicInput.value;
                     console.log('用户输入:', topic);
-                    if (!topic.trim()) {
+                    if (!topic || !topic.trim()) {
                         console.log('输入为空，取消提交');
                         return;
                     }
@@ -268,9 +268,13 @@
                     try {
                         console.log('准备发送请求到 /chat_stream');
                         // 发送请求到流式端点
+                        const formData = new FormData(chatForm);
+                        // 确保topic字段被正确设置
+                        formData.set('topic', topic);
+                        
                         const response = await fetch('/chat_stream', {
                             method: 'POST',
-                            body: new FormData(chatForm),
+                            body: formData,
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest'
                             }
