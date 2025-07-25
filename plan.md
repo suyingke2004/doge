@@ -12,6 +12,7 @@
     *   `newsapi-python` (用于对接 NewsAPI)
     *   `newspaper3k` (用于抓取和解析网页文章内容)
     *   `praw` (用于访问 Reddit API)
+    *   `feedparser` (用于解析 RSS 订阅源)
 *   **前端:** HTML, CSS
 *   **Markdown 解析:** `Markdown`
 
@@ -19,7 +20,7 @@
 
 项目最终由三个核心模块组成：
 
-1.  **工具模块 (`tools.py`)**:
+1.  **工具模块 (`tools/__init__.py`)**:
     *   提供了两个核心工具：`Search_News` 和 `Scrape_Article_Content`。
     *   工具名遵循了 OpenAI API 的规范（不含空格）。
     *   使用 `python-dotenv` 库从 `.env` 文件安全加载 API 密钥。
@@ -28,13 +29,17 @@
     *   提供了 `Search_Reddit` 工具，用于搜索 Reddit 上的相关讨论。
     *   使用 `praw` 库与 Reddit API 交互。
 
-3.  **AI代理模块 (`agent.py`)**:
+3.  **RSS工具模块 (`tools/rss_feed.py`)**:
+    *   提供了 `Search_RSS_Feeds` 工具，用于从 RSS 订阅源获取内容。
+    *   使用 `feedparser` 库解析 RSS 订阅源。
+
+4.  **AI代理模块 (`agent.py`)**:
     *   封装了 `NewsletterAgent` 类，负责处理所有 AI 相关的逻辑。
     *   **关键决策**: 使用 `create_openai_tools_agent` 代替了 `create_react_agent`。这个选择极大地提升了代理调用工具的稳定性和可靠性，因为它专门为 OpenAI 的函数调用功能设计。
     *   代理能够根据用户输入，自主地选择并执行工具，并在信息收集完毕后生成最终的报告。
     *   实现了对话记忆功能，支持多轮对话。
 
-4.  **Web应用模块 (`app.py`)**:
+5.  **Web应用模块 (`app.py`)**:
     *   使用 Flask 搭建了一个简单的 Web 服务器。
     *   提供了三个路由：
         *   `/`: 显示一个允许用户输入主题的表单 (`index.html`)。
@@ -114,12 +119,15 @@
 *   集成 Reddit API，现在可以从 Reddit 获取相关讨论
 *   添加了 `Search_Reddit` 工具，丰富了信息来源
 *   更新了依赖列表，添加了 `praw` 库
+*   集成 RSS 订阅源，现在可以从 RSS 获取内容
+*   添加了 `Search_RSS_Feeds` 工具，进一步丰富了信息来源
+*   更新了依赖列表，使用已有的 `feedparser` 库
 
 ## 未来开发计划
 
 ### 1. 扩展数据源
 *   集成 Reddit API 以获取社区讨论和热门话题（已完成）
-*   添加 RSS 订阅源支持，提供更多样化的内容来源
+*   添加 RSS 订阅源支持，提供更多样化的内容来源（已完成）
 *   考虑集成社交媒体数据源（如 Twitter API）
 
 ### 2. 改进用户界面

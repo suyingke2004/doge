@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
 from tools import news_tools
 from tools.reddit_search import reddit_search_tool
+from tools.rss_feed import rss_feed_tool
 
 # 加载环境变量
 load_dotenv()
@@ -62,7 +63,8 @@ class NewsletterAgent:
         self.tools = [
             news_tools.search_news,
             news_tools.scrape_article_content,
-            reddit_search_tool.search_reddit
+            reddit_search_tool.search_reddit,
+            rss_feed_tool.search_rss_feeds
         ]
 
         # 3. 创建包含聊天记录占位符的提示模板
