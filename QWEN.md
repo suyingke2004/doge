@@ -68,6 +68,11 @@ The Flask app provides a simple web interface with the following key routes:
 *   `/new`: Clears the session and starts a new conversation.
 *   `/chat_stream`: Handles streaming responses from the agent for a better user experience.
 
+## Development Workflow
+
+*   The application automatically restarts when code changes are detected (using Flask's debug mode).
+*   You don't need to manually restart the application after making changes.
+
 ## Testing
 
 *   Unit tests are located in the `tests/` directory.
