@@ -55,7 +55,6 @@
                     <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="输入您的问题..." required></textarea>
                     <button type="submit" id="chat-submit-btn">发送</button>
                 </form>
-                <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
             </div>
 
             <!-- 模型选择侧边栏 -->
@@ -89,6 +88,8 @@
                     <input type="hidden" id="language-input" name="language" value="{{ session.get('language', 'zh') }}">
                 </form>
                 
+                <!-- 新对话按钮移到这里 -->
+                <a href="{{ url_for('new_chat') }}" class="new-chat-link">开始新对话</a>
             </div>
         </div>
     </div>
@@ -253,7 +254,7 @@
             const maxiterLabel = document.getElementById('maxiter-label');
             const chatInputPlaceholder = document.getElementById('chat-topic-input');
             const chatSubmitBtn = document.getElementById('chat-submit-btn');
-            const newChatLink = document.querySelector('.back-link');
+            const newChatLink = document.querySelector('.new-chat-link');
             
             // 中英文文本映射
             const translations = {

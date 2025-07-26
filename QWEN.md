@@ -91,6 +91,15 @@ Changes made:
 2. Updated `templates/chat.html` to truncate history titles to 30 characters with ellipsis
 3. Updated `templates/history.html` to limit displayed content and maintain consistent item heights
 
+### UI Layout and Styling Improvements (July 26, 2025)
+
+Improved the UI layout and styling by moving the "New Chat" button to below the model selection sidebar and adding a background image to the model selection area.
+
+Changes made:
+1. Moved the "New Chat" button from below the chat input to below the model selection sidebar in `templates/chat.html`
+2. Added a background image to the model selection sidebar in `static/style.css`
+3. Created new styling for the relocated "New Chat" button to make it more visually appealing
+
 ### Language Toggle Fix (July 26, 2025)
 
 Fixed an issue where the language toggle button was not responding to clicks. The fix involved adding the missing JavaScript event listener and functionality to switch between Chinese and English.
