@@ -20,6 +20,8 @@
   - newspaper3k (网页文章抓取和解析)
   - praw (Reddit API集成)
   - feedparser (RSS订阅源解析)
+  - beautifulsoup4 (通用网页内容提取)
+  - requests (HTTP请求获取网页内容)
 - **内容交付**:
   - sendgrid (邮件发送)
   - weasyprint (PDF导出)

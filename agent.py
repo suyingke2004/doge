@@ -9,6 +9,7 @@ from tools.reddit_search import reddit_search_tool
 from tools.rss_feed import rss_feed_tool
 from tools.content_delivery import content_delivery_tool
 from tools.url_reader import url_reader_tool
+from tools.news_website_search import news_website_search_tool
 
 # 加载环境变量
 load_dotenv()
@@ -71,7 +72,8 @@ class NewsletterAgent:
             rss_feed_tool.search_rss_feeds,
             content_delivery_tool.send_email,
             content_delivery_tool.export_pdf,
-            url_reader_tool.read_url_content
+            url_reader_tool.read_url_content,
+            news_website_search_tool.search_news_websites
         ]
 
         # 3. 创建包含聊天记录占位符的提示模板
@@ -93,6 +95,7 @@ class NewsletterAgent:
 - Send_Email: 通过邮件发送生成的内容
 - Export_PDF: 将内容导出为PDF文档
 - Read_URL_Content: 读取并提取任意网页URL的内容
+- Search_News_Websites: 搜索常见新闻网站并获取相关新闻URL
 
 工作流程：
 1. 接收用户输入的主题或问题
@@ -102,6 +105,7 @@ class NewsletterAgent:
 5. 生成结构化、易读的时事通讯
 6. 根据用户需求提供额外服务（发送邮件、导出PDF）
 7. 当需要获取特定网页内容时，使用Read_URL_Content工具
+8. 当需要从主流新闻网站获取相关新闻时，使用Search_News_Websites工具
 
 时事通讯格式规范：
 - 使用Markdown格式编写
