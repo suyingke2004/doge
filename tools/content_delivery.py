@@ -5,7 +5,8 @@ from sendgrid.helpers.mail import Mail, Email, Content
 import os
 import pdfkit
 import markdown
-import tempfile
+import uuid
+from datetime import datetime
 
 # 加载 .env 文件中的环境变量
 load_dotenv()
@@ -58,25 +59,38 @@ class ContentDeliveryTool:
         """
         当需要将内容导出为PDF文件时，使用此工具。
         输入包括要导出的内容和文件名。
-        返回PDF文件的路径。
+        返回PDF文件的下载链接。
         """
         # 检查必要参数
         if not content:
             return "PDF导出失败：内容不能为空。"
         
         try:
+            # 确保文件名以.pdf结尾
+            if not filename.endswith(".pdf"):
+                filename += ".pdf"
+            
+            # 生成唯一的文件名以避免冲突
+            unique_filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}_{filename}"
+            
+            # 确保downloads目录存在
+            downloads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "downloads")
+            if not os.path.exists(downloads_dir):
+                os.makedirs(downloads_dir)
+            
+            # 构建PDF文件的完整路径
+            pdf_path = os.path.join(downloads_dir, unique_filename)
+            
             # 将Markdown转换为HTML
             html_content = markdown.markdown(content)
             
-            # 创建临时文件
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
-                pdf_path = tmp_file.name
-                
-                # 使用pdfkit生成PDF
-                # 注意：这需要系统中安装了wkhtmltopdf
-                pdfkit.from_string(html_content, pdf_path)
-                
-                return f"PDF已成功导出至：{pdf_path}"
+            # 使用pdfkit生成PDF
+            # 注意：这需要系统中安装了wkhtmltopdf
+            pdfkit.from_string(html_content, pdf_path)
+            
+            # 返回下载链接
+            download_link = f"/download/{unique_filename}"
+            return f"PDF已成功生成！下载链接：{download_link}"
                 
         except Exception as e:
             return f"PDF导出过程中出现错误：{e}"

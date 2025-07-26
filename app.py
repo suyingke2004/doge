@@ -78,6 +78,37 @@ def debug_status():
     """状态指示器调试页面"""
     return render_template('debug_status.html')
 
+# 3.8 定义PDF下载路由
+@app.route('/download/<filename>')
+def download_pdf(filename):
+    """提供PDF文件下载"""
+    try:
+        # 确保文件名是安全的
+        from werkzeug.utils import secure_filename
+        filename = secure_filename(filename)
+        
+        # 构建文件路径
+        downloads_dir = os.path.join(app.static_folder, 'downloads')
+        file_path = os.path.join(downloads_dir, filename)
+        
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            return "文件未找到", 404
+            
+        # 检查文件扩展名是否为PDF
+        if not filename.endswith('.pdf'):
+            return "只能下载PDF文件", 400
+            
+        # 使用Flask的send_from_directory提供文件下载
+        from flask import send_from_directory
+        return send_from_directory(
+            directory=downloads_dir,
+            path=filename,
+            as_attachment=True  # 强制下载而不是在浏览器中打开
+        )
+    except Exception as e:
+        return f"下载文件时出错: {str(e)}", 500
+
 # 4. 定义流式生成路由，处理所有对话
 @app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
