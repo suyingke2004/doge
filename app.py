@@ -127,53 +127,48 @@ def chat_stream():
         return render_template('chat.html', chat_history=chat_history_to_render)
 
     # 如果是 POST 请求，处理流式响应
-    def generate():
-        # 从表单获取用户输入
+    def generate_with_session():
+        from sqlalchemy.orm import sessionmaker
+        from models import ChatSession, ChatMessage
+        from sqlalchemy import create_engine
+        import uuid
+
+        # 数据库设置
+        DATABASE_URL = "sqlite:///chat_history.db"
+        engine = create_engine(DATABASE_URL, echo=False)
+        SessionLocal = sessionmaker(bind=engine)
+        db_session = SessionLocal()
+
         user_input = request.form.get('topic')
-        
-        # 打印调试信息
-        print(f"Received form data: {dict(request.form)}")
-        print(f"user_input: '{user_input}'")
-        
-        # 如果是新对话，获取模型选择、语言和 maxiter 参数并存入 session
-        # 对于已存在的对话，从 session 中获取模型选择和语言
-        if 'chat_history' not in session:
-            model_provider = request.form.get('model_provider', 'deepseek')
-            model_name = request.form.get('model_name', '').strip()
-            # 如果没有提供模型名称，则使用空字符串表示使用默认模型
-            model_name = model_name if model_name else None
-            # 获取 maxiter 参数，默认为 128
-            maxiter = int(request.form.get('maxiter', 128))
-            # 获取语言参数，默认为中文
-            language = request.form.get('language', 'zh')
-            
-            session['model_provider'] = model_provider
-            session['model_name'] = model_name
-            session['maxiter'] = maxiter
-            session['language'] = language
-        else:
+        session_id = session.get('session_id')
+
+        # 如果没有会话ID，则创建新会话
+        if not session_id:
+            new_session = ChatSession(title=user_input[:200]) # 使用用户输入作为标题
+            db_session.add(new_session)
+            db_session.commit()
+            session_id = new_session.id
+            session['session_id'] = session_id
+
+        # 保存用户消息
+        user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
+        db_session.add(user_message)
+        db_session.commit()
+
+        # 从 session 中获取历史记录
+        chat_history_raw = session.get('chat_history', [])
+        chat_history_raw.append({'type': 'human', 'content': user_input})
+        session['chat_history'] = chat_history_raw
+
+        # 将原始字典列表转换为 LangChain 消息对象列表
+        chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
+
+        try:
             model_provider = session.get('model_provider', 'deepseek')
             model_name = session.get('model_name', None)
             maxiter = session.get('maxiter', 128)
             language = session.get('language', 'zh')
 
-        # 更宽松的输入验证 - 只有当输入为 None 时才报错
-        if user_input is None:
-            yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
-            return
-            
-        # 如果输入是空字符串，也认为是无效输入
-        if not user_input.strip():
-            yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
-            return
-
-        # 从 session 中获取历史记录
-        chat_history_raw = session.get('chat_history', [])
-        # 将原始字典列表转换为 LangChain 消息对象列表
-        chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
-
-        try:
-            # 创建代理实例，并传入历史记录、 maxiter 和 language 参数
             agent = NewsletterAgent(
                 model_provider=model_provider, 
                 model_name=model_name, 
@@ -182,41 +177,26 @@ def chat_stream():
                 language=language
             )
             
-            # 使用流式方式调用代理生成内容
             full_response = ""
             
-            # 使用 asyncio.run 来处理异步代码（推荐方法）
-            import asyncio
-            import json
-            
-            # 定义一个异步生成器函数
             async def async_generate():
                 nonlocal full_response
                 async for chunk in agent.generate_newsletter_stream(user_input):
-                    # 累积响应内容
                     if chunk.get("type") == "output":
                         full_response += chunk.get("content", "")
-                    # 立即发送每个块到客户端
                     yield json.dumps(chunk, ensure_ascii=False) + "\n"
             
-            # 在新事件循环中运行异步代码
-            async def run_async_code():
-                async for item in async_generate():
-                    yield item
-                    
-            # 同步包装异步生成器
+            # (The rest of the streaming logic remains the same)
             import threading
             from queue import Queue, Empty
             
-            # 创建队列用于传递数据
             q = Queue()
             
-            # 定义在后台线程中运行的函数
             def run_async_generator():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 try:
-                    async_gen = run_async_code()
+                    async_gen = async_generate()
                     while True:
                         try:
                             item = loop.run_until_complete(async_gen.__anext__())
@@ -226,46 +206,123 @@ def chat_stream():
                 except Exception as e:
                     q.put(e)
                 finally:
-                    q.put(None)  # 信号表示完成
+                    q.put(None)
                     loop.close()
             
-            # 启动后台线程
             thread = threading.Thread(target=run_async_generator)
             thread.start()
             
-            # 从队列中获取数据并发送给客户端
             while True:
                 try:
-                    item = q.get(timeout=1)  # 1秒超时
-                    if item is None:  # 完成信号
+                    item = q.get(timeout=1)
+                    if item is None:
                         break
                     if isinstance(item, Exception):
                         raise item
                     yield item
                 except Empty:
-                    # 检查线程是否还活着
                     if not thread.is_alive():
                         break
                     continue
             
-            # 等待线程完成
             thread.join()
-                    
-            # 更新历史记录
-            chat_history_raw.append({'type': 'human', 'content': user_input})
+
+            # 保存AI消息
+            ai_message = ChatMessage(session_id=session_id, message_type='ai', content=full_response)
+            db_session.add(ai_message)
+            db_session.commit()
+
             chat_history_raw.append({'type': 'ai', 'content': full_response})
             session['chat_history'] = chat_history_raw
 
-        except ValueError as e:
-            print(f"配置错误: {e}")
-            yield json.dumps({"type": "output", "content": f"错误: {e}"}, ensure_ascii=False) + "\n"
         except Exception as e:
             print(f"生成内容时出错: {e}")
             yield json.dumps({"type": "output", "content": f"生成内容时发生错误: {e}"}, ensure_ascii=False) + "\n"
+        finally:
+            db_session.close()
 
-    # 使用Flask的stream_with_context包装生成器
-    return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')
+    return Response(stream_with_context(generate_with_session()), content_type='text/plain; charset=utf-8')
 
+
+# 3.9 定义获取历史记录的路由
+@app.route('/history')
+def get_history():
+    """获取聊天历史记录"""
+    try:
+        from sqlalchemy.orm import sessionmaker
+        from models import ChatSession
+        from sqlalchemy import desc, create_engine
+        from flask import jsonify
+        
+        # 数据库设置
+        DATABASE_URL = "sqlite:///chat_history.db"
+        engine = create_engine(DATABASE_URL, echo=False)
+        
+        # 创建数据库会话
+        SessionLocal = sessionmaker(bind=engine)
+        db_session = SessionLocal()
+        
+        # 获取所有会话，按时间倒序排列
+        sessions = db_session.query(ChatSession).order_by(desc(ChatSession.start_time)).all()
+        db_session.close()
+        
+        # 转换为JSON格式
+        history_data = []
+        for session in sessions:
+            history_data.append({
+                'id': session.id,
+                'title': session.title or f"会话于 {session.start_time.strftime('%Y-%m-%d %H:%M')}",
+                'start_time': session.start_time.isoformat()
+            })
+        
+        return jsonify(history_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 3.10 定义加载特定历史记录的路由
+@app.route('/history/<session_id>')
+def load_history(session_id):
+    """加载指定的聊天历史记录并渲染聊天页面"""
+    try:
+        from sqlalchemy.orm import sessionmaker
+        from models import ChatSession, ChatMessage
+        from sqlalchemy import create_engine
+        
+        # 数据库设置
+        DATABASE_URL = "sqlite:///chat_history.db"
+        engine = create_engine(DATABASE_URL, echo=False)
+        
+        # 创建数据库会话
+        SessionLocal = sessionmaker(bind=engine)
+        db_session = SessionLocal()
+        
+        # 查询指定的会话及其所有消息
+        session_data = db_session.query(ChatSession).filter_by(id=session_id).first()
+        
+        if not session_data:
+            return "会话未找到", 404
+            
+        messages = db_session.query(ChatMessage).filter_by(session_id=session_id).order_by(ChatMessage.timestamp).all()
+        db_session.close()
+        
+        # 将数据库消息转换为 session 格式
+        chat_history = []
+        for msg in messages:
+            chat_history.append({
+                'type': msg.message_type,
+                'content': msg.content
+            })
+            
+        # 将历史记录存入 Flask session
+        session['chat_history'] = chat_history
+        session['session_id'] = session_id
+        
+        # 重定向到聊天页面
+        return redirect(url_for('chat_stream'))
+        
+    except Exception as e:
+        print(f"加载历史记录时出错: {e}")
+        return "加载历史记录时出错", 500
 
 
 # 启动应用的入口

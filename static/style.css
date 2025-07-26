@@ -65,12 +65,37 @@ body {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1200px; /* 增加容器宽度以适应侧边栏 */
     margin: 0 auto;
     background-color: rgba(255, 255, 255, 0.6); /* 增加透明度至0.6 */
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.main-container {
+    display: flex;
+    gap: 20px; /* 添加间距 */
+}
+
+.history-sidebar {
+    flex: 0 0 250px; /* 固定宽度的侧边栏 */
+    padding: 20px;
+    background-color: rgba(249, 250, 251, 0.9);
+    border-radius: 8px;
+    height: calc(100vh - 100px); /* 计算高度 */
+    overflow-y: auto;
+}
+
+.chat-main {
+    flex-grow: 1; /* 占据剩余空间 */
+}
+
+.model-selection-sidebar {
+    width: 25%;
+    padding: 20px;
+    background-color: rgba(249, 250, 251, 0.9);
+    border-radius: 8px;
 }
 
 h1 {
@@ -206,7 +231,8 @@ button:hover {
     padding: 10px 15px;
     border-radius: 12px;
     margin: 0 10px;
-    min-width: 100px;
+    max-width: 75%; /* 限制最大宽度 */
+    word-wrap: break-word; /* 长单词换行 */
 }
 
 .user-message .message-content {
@@ -329,4 +355,44 @@ button:hover {
 .pdf-download-link:hover {
     background-color: #218838;
     color: white;
+}
+
+/* 历史记录侧边栏 */
+.history-sidebar {
+    width: 25%;
+    padding: 20px;
+    background-color: rgba(249, 250, 251, 0.9);
+    border-radius: 8px;
+    height: 400px;
+    overflow-y: auto;
+}
+
+.history-sidebar h3 {
+    margin-top: 0;
+    color: #1a2b4d;
+    border-bottom: 2px solid #eef2f5;
+    padding-bottom: 10px;
+}
+
+.history-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.history-sidebar li {
+    margin-bottom: 10px;
+}
+
+.history-sidebar a {
+    text-decoration: none;
+    color: #007bff;
+    display: block;
+    padding: 10px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.history-sidebar a:hover {
+    background-color: #e9ecef;
 }

@@ -55,11 +55,19 @@ class PDFExportTool:
             </html>
             """
             
-            # 生成PDF文件
-            pdfkit.from_string(html_content, filename)
+            # 定义保存路径为 static/downloads
+            save_dir = os.path.join("static", "downloads")
+            os.makedirs(save_dir, exist_ok=True)
             
-            # 返回文件路径
-            return f"PDF文件已生成: {filename}"
+            # 完整的文件路径
+            file_path = os.path.join(save_dir, filename)
+            
+            # 生成PDF文件
+            pdfkit.from_string(html_content, file_path)
+            
+            # 返回可供Web访问的相对URL
+            file_url = f"/{save_dir.replace(os.path.sep, '/')}/{filename}"
+            return f"PDF文件已生成，下载链接: {file_url}"
             
         except Exception as e:
             return f"导出PDF时出错: {e}"

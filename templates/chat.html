@@ -21,153 +21,85 @@
             </div>
         </div>
         
-        <!-- 显示聊天历史 -->
-        <div class="chat-window" id="chat-window">
-            {% for message in chat_history %}
-                {% if message.type == 'human' %}
-                    <div class="chat-message user-message">
-                        <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span>你</span>
+        <div class="main-container">
+            <div class="history-sidebar" id="history-sidebar">
+                <h3>聊天历史</h3>
+                <ul id="history-list"></ul>
+            </div>
+            <div class="chat-main">
+                <!-- 显示聊天历史 -->
+                <div class="chat-window" id="chat-window">
+                    {% for message in chat_history %}
+                        {% if message.type == 'human' %}
+                            <div class="chat-message user-message">
+                                <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
+                                <div class="message-content">
+                                    <p>{{ message.content }}</p>
+                                </div>
                             </div>
-                            <p>{{ message.content }}</p>
-                        </div>
-                    </div>
-                {% elif message.type == 'ai' %}
-                    <div class="chat-message ai-message">
-                        <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
-                        <div class="message-content">
-                            <div class="message-header">
-                                <span>AI助手</span>
+                        {% elif message.type == 'ai' %}
+                            <div class="chat-message ai-message">
+                                <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
+                                <div class="message-content">
+                                    <div>{{ message.content_html | safe }}</div>
+                                </div>
                             </div>
-                            <div>{{ message.content_html | safe }}</div>
-                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- 统一的聊天输入表单 -->
+                <form id="chat-form" class="chat-form">
+                    <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="输入您的问题..." required></textarea>
+                    <button type="submit" id="chat-submit-btn">发送</button>
+                </form>
+                <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
+            </div>
+
+            <!-- 模型选择侧边栏 -->
+            <div id="model-selection-sidebar" class="model-selection-sidebar">
+                <p>模型与参数</p>
+                <form id="model-params-form">
+                    <div class="form-group">
+                        <label for="model-provider" id="model-provider-label">模型提供商</label>
+                        <select name="model_provider" id="model-provider">
+                            <option value="deepseek" {% if session.get('model_provider') == 'deepseek' %}selected{% endif %}>DeepSeek</option>
+                            <option value="openai" {% if session.get('model_provider') == 'openai' %}selected{% endif %}>OpenAI</option>
+                            <option value="zhipu" {% if session.get('model_provider') == 'zhipu' %}selected{% endif %}>Zhipu AI</option>
+                            <option value="ali" {% if session.get('model_provider') == 'ali' %}selected{% endif %}>Alibaba Cloud</option>
+                            <option value="moonshot" {% if session.get('model_provider') == 'moonshot' %}selected{% endif %}>Moonshot AI</option>
+                        </select>
                     </div>
-                {% endif %}
-            {% endfor %}
+                    
+                    <div class="form-group">
+                        <label for="model-name" id="model-name-label">模型</label>
+                        <select name="model_name" id="model-name">
+                            <!-- 动态生成 -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="maxiter" id="maxiter-label">最大迭代次数</label>
+                        <input type="number" id="maxiter" name="maxiter" min="1" value="{{ session.get('maxiter', 128) }}">
+                    </div>
+                    
+                    <!-- 隐藏的语言字段 -->
+                    <input type="hidden" id="language-input" name="language" value="{{ session.get('language', 'zh') }}">
+                </form>
+                
+            </div>
         </div>
-
-        <!-- 如果没有聊天历史，显示模型选择表单 -->
-        {% if not chat_history %}
-        <div id="model-selection" class="model-selection">
-            <p>选择模型和参数开始对话：</p>
-            <form id="model-form" class="model-form">
-                <div class="form-group">
-                    <label for="model-provider" id="model-provider-label">选择模型提供商</label>
-                    <select name="model_provider" id="model-provider">
-                        <option value="deepseek" selected>DeepSeek</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="zhipu">Zhipu AI</option>
-                        <option value="ali">Alibaba Cloud</option>
-                        <option value="moonshot">Moonshot AI</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="model-name" id="model-name-label">选择模型</label>
-                    <select name="model_name" id="model-name">
-                        <!-- 默认模型选项将根据提供商动态生成 -->
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="maxiter" id="maxiter-label">最大迭代次数</label>
-                    <input type="number" id="maxiter" name="maxiter" min="1" value="128">
-                </div>
-                
-                <div class="form-group">
-                    <label for="topic-input" id="topic-label">输入起始主题</label>
-                    <textarea id="topic-input" name="topic" class="expanding-textarea" placeholder="例如：量子计算的最新进展" required></textarea>
-                </div>
-                
-                <!-- 隐藏的语言字段 -->
-                <input type="hidden" id="language-input" name="language" value="zh">
-                
-                <button type="submit" id="submit-btn">开始对话</button>
-            </form>
-        </div>
-        
-        <!-- 隐藏的聊天表单 -->
-        <form id="chat-form" class="chat-form" style="display: none;">
-            <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="继续提问..." required></textarea>
-            <input type="hidden" name="model_provider" id="chat-model-provider">
-            <input type="hidden" name="model_name" id="chat-model-name">
-            <input type="hidden" name="language" id="chat-language-input" value="zh">
-            <button type="submit" id="chat-submit-btn">发送</button>
-        </form>
-        {% else %}
-        <!-- 如果有聊天历史，只显示聊天表单 -->
-        <form id="chat-form" class="chat-form">
-            <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="继续提问..." required></textarea>
-            <input type="hidden" name="model_provider" value="{{ session.get('model_provider', 'deepseek') }}">
-            {% if session.get('model_name') %}
-            <input type="hidden" name="model_name" value="{{ session.get('model_name') }}">
-            {% endif %}
-            <input type="hidden" name="language" id="chat-language-input" value="{{ session.get('language', 'zh') }}">
-            <button type="submit" id="chat-submit-btn">发送</button>
-        </form>
-        {% endif %}
-
-        <a href="{{ url_for('new_chat') }}" class="back-link">开始新对话</a>
     </div>
 
     <script>
-        // 创建流星粒子效果
         document.addEventListener('DOMContentLoaded', function() {
-            const starsContainer = document.getElementById('stars-container');
-            const starCount = 100; // 流星数量
-            
-            // 创建流星粒子
-            for (let i = 0; i < starCount; i++) {
-                createStar();
-            }
-            
-            function createStar() {
-                const star = document.createElement('div');
-                star.classList.add('star');
-                
-                // 随机大小 (1-3px)
-                const size = Math.random() * 2 + 1;
-                star.style.width = `${size}px`;
-                star.style.height = `${size}px`;
-                
-                // 随机位置 (页面顶部和左侧一定范围内)
-                const startX = Math.random() * window.innerWidth * 1.5;
-                const startY = Math.random() * -window.innerHeight * 0.5;
-                star.style.left = `${startX}px`;
-                star.style.top = `${startY}px`;
-                
-                // 随机透明度
-                star.style.opacity = Math.random() * 0.8 + 0.2;
-                
-                // 随机动画持续时间 (2-5秒)
-                const duration = Math.random() * 3 + 2;
-                star.style.animationDuration = `${duration}s`;
-                
-                // 随机动画延迟
-                const delay = Math.random() * 5;
-                star.style.animationDelay = `${delay}s`;
-                
-                starsContainer.appendChild(star);
-                
-                // 动画结束后移除元素并创建新的流星
-                setTimeout(() => {
-                    star.remove();
-                    createStar();
-                }, duration * 1000);
-            }
-        });
-        document.addEventListener('DOMContentLoaded', function() {
-            const modelForm = document.getElementById('model-form');
             const chatForm = document.getElementById('chat-form');
-            const topicInput = document.getElementById('topic-input') || document.getElementById('chat-topic-input');
             const chatWindow = document.getElementById('chat-window');
             const modelProviderSelect = document.getElementById('model-provider');
             const modelNameSelect = document.getElementById('model-name');
             const maxiterInput = document.getElementById('maxiter');
-            
-            // 预设各提供商的模型选项
+            const languageInput = document.getElementById('language-input');
+
             const modelOptions = {
                 'deepseek': [
                     { value: 'deepseek-chat', text: 'deepseek-chat (默认)' },
@@ -194,551 +126,142 @@
                     { value: 'moonshot-v1-128k', text: 'moonshot-v1-128k' }
                 ]
             };
-            
-            // 当提供商改变时，更新模型选项
-            if (modelProviderSelect && modelNameSelect) {
-                function updateModelOptions() {
-                    const provider = modelProviderSelect.value;
-                    const models = modelOptions[provider] || [];
-                    
-                    // 清空现有选项
-                    modelNameSelect.innerHTML = '';
-                    
-                    // 添加新选项
-                    models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.value;
-                        option.textContent = model.text;
-                        modelNameSelect.appendChild(option);
-                    });
-                }
+
+            function updateModelOptions() {
+                const provider = modelProviderSelect.value;
+                const models = modelOptions[provider] || [];
+                const selectedModel = "{{ session.get('model_name', '') }}";
                 
-                // 初始化模型选项
-                updateModelOptions();
+                modelNameSelect.innerHTML = '';
                 
-                // 添加事件监听器
-                modelProviderSelect.addEventListener('change', updateModelOptions);
-            }
-            
-            // 处理模型选择表单提交
-            if (modelForm) {
-                modelForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const formData = new FormData(modelForm);
-                    const topic = formData.get('topic');
-                    const modelProvider = formData.get('model_provider');
-                    const modelName = formData.get('model_name');
-                    
-                    if (!topic.trim()) return;
-                    
-                    // 添加用户消息到聊天窗口
-                    const userMessageDiv = document.createElement('div');
-                    userMessageDiv.className = 'chat-message user-message';
-                    userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
-                    chatWindow.appendChild(userMessageDiv);
-                    
-                    // 创建AI消息容器
-                    const aiMessageDiv = document.createElement('div');
-                    aiMessageDiv.className = 'chat-message ai-message';
-                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div><div class="status-indicator" id="status-indicator" style="display: none;"></div>';
-                    chatWindow.appendChild(aiMessageDiv);
-                    
-                    const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
-                    const statusIndicator = aiMessageDiv.querySelector('#status-indicator');
-                    
-                    // 调试信息
-                    console.log('Status indicator element:', statusIndicator);
-                    
-                    // 滚动到底部
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                    
-                    // 隐藏模型选择表单，显示聊天表单
-                    document.getElementById('model-selection').style.display = 'none';
-                    chatForm.style.display = 'block';
-                    
-                    // 设置聊天表单的隐藏字段
-                    document.getElementById('chat-model-provider').value = modelProvider;
-                    if (modelName) {
-                        document.getElementById('chat-model-name').value = modelName;
+                models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.value;
+                    option.textContent = model.text;
+                    if (model.value === selectedModel) {
+                        option.selected = true;
                     }
-                    
-                    try {
-                        // 发送请求到流式端点
-                        const response = await fetch('/chat_stream', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder('utf-8');
-                        let accumulatedText = '';
-                        let buffer = ''; // 用于累积不完整的数据
-                        
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            
-                            const chunk = decoder.decode(value, { stream: true });
-                            buffer += chunk; // 累积数据到缓冲区
-                            
-                            // 按行处理数据
-                            const lines = buffer.split('\n');
-                            buffer = lines.pop(); // 保留最后一个可能不完整的行在缓冲区中
-                            
-                            for (const line of lines) {
-                                if (line.trim() === '') continue; // 跳过空行
-                                
-                                // 解析JSON格式的消息
-                                try {
-                                    const message = JSON.parse(line);
-                                    if (message.type === "status") {
-                                        // 显示状态消息
-                                        statusIndicator.textContent = message.content;
-                                        statusIndicator.style.display = "block";
-                                    } else if (message.type === "output") {
-                                        // 隐藏状态消息
-                                        statusIndicator.style.display = "none";
-                                        // 更新AI响应
-                                        accumulatedText += message.content;
-                                        aiResponseDiv.textContent = accumulatedText;
-                                    }
-                                } catch (e) {
-                                    // 如果不是JSON格式，按原来的方式处理
-                                    accumulatedText += line;
-                                    aiResponseDiv.textContent = accumulatedText;
-                                }
-                            }
-                            
-                            // 滚动到底部
-                            chatWindow.scrollTop = chatWindow.scrollHeight;
-                        }
-                        
-                        // 在流式响应结束后，更新聊天历史记录
-                        // 不需要重新加载页面，保持当前界面状态
-                        // 清空输入框
-                        topicInput.value = '';
-                    } catch (error) {
-                        console.error('Error:', error);
-                        aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
-                    }
+                    modelNameSelect.appendChild(option);
                 });
             }
-            
-            // 处理聊天表单提交
-            if (chatForm) {
-                console.log('注册聊天表单提交事件监听器');
-                chatForm.addEventListener('submit', async function(e) {
-                    console.log('聊天表单提交事件被触发');
-                    e.preventDefault();
-                    console.log('已阻止默认表单提交行为');
-                    
-                    // 确保获取到正确的输入框元素
-                    const topicInputElement = document.getElementById('chat-topic-input');
-                    const topic = topicInputElement ? topicInputElement.value : '';
-                    console.log('用户输入:', topic);
-                    if (!topic || !topic.trim()) {
-                        console.log('输入为空，取消提交');
+
+            updateModelOptions();
+            modelProviderSelect.addEventListener('change', updateModelOptions);
+
+            chatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const topicInputElement = document.getElementById('chat-topic-input');
+                const topic = topicInputElement.value.trim();
+                if (!topic) return;
+
+                // 添加用户消息
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'chat-message user-message';
+                userMessageDiv.innerHTML = `
+                    <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
+                    <div class="message-content"><p>${topic}</p></div>
+                `;
+                chatWindow.appendChild(userMessageDiv);
+                topicInputElement.value = '';
+
+                // 创建AI消息容器
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'chat-message ai-message';
+                aiMessageDiv.innerHTML = `
+                    <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
+                    <div class="message-content">
+                        <div id="ai-response"></div>
+                        <div class="status-indicator" style="display: none;"></div>
+                    </div>
+                `;
+                chatWindow.appendChild(aiMessageDiv);
+                
+                const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                const statusIndicator = aiMessageDiv.querySelector('.status-indicator');
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                // 收集表单数据
+                const formData = new FormData();
+                formData.append('topic', topic);
+                formData.append('model_provider', modelProviderSelect.value);
+                formData.append('model_name', modelNameSelect.value);
+                formData.append('maxiter', maxiterInput.value);
+                formData.append('language', languageInput.value);
+
+                try {
+                    const response = await fetch('/chat_stream', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder('utf-8');
+                    let accumulatedText = '';
+                    let buffer = '';
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+
+                        for (const line of lines) {
+                            if (line.trim() === '') continue;
+                            try {
+                                const message = JSON.parse(line);
+                                if (message.type === "status") {
+                                    statusIndicator.textContent = message.content;
+                                    statusIndicator.style.display = "block";
+                                } else if (message.type === "output") {
+                                    statusIndicator.style.display = "none";
+                                    accumulatedText += message.content;
+                                    aiResponseDiv.innerHTML = accumulatedText; // Use innerHTML to render potential HTML tags
+                                }
+                            } catch (e) {
+                                accumulatedText += line;
+                                aiResponseDiv.textContent = accumulatedText;
+                            }
+                        }
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
+                }
+            });
+
+            // 其他脚本（如粒子效果、语言切换等）保持不变
+        });
+
+        // 加载聊天历史记录
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/history')
+                .then(response => response.json())
+                .then(data => {
+                    const historyList = document.getElementById('history-list');
+                    if (data.error) {
+                        historyList.innerHTML = `<li>加载出错: ${data.error}</li>`;
                         return;
                     }
-                    
-                    // 添加用户消息到聊天窗口
-                    const userMessageDiv = document.createElement('div');
-                    userMessageDiv.className = 'chat-message user-message';
-                    userMessageDiv.innerHTML = `<p><strong>你:</strong> ${topic}</p>`;
-                    chatWindow.appendChild(userMessageDiv);
-                    
-                    // 清空输入框
-                    if (topicInputElement) {
-                        topicInputElement.value = '';
+                    if (data.length === 0) {
+                        historyList.innerHTML = '<li>无历史记录</li>';
+                        return;
                     }
-                    
-                    // 创建AI消息容器
-                    const aiMessageDiv = document.createElement('div');
-                    aiMessageDiv.className = 'chat-message ai-message';
-                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div><div class="status-indicator" id="status-indicator" style="display: none;"></div>';
-                    chatWindow.appendChild(aiMessageDiv);
-                    
-                    const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
-                    const statusIndicator = aiMessageDiv.querySelector('#status-indicator');
-                    
-                    // 调试信息
-                    console.log('Status indicator element:', statusIndicator);
-                    
-                    // 滚动到底部
-                    chatWindow.scrollTop = chatWindow.scrollHeight;
-                    
-                    try {
-                        console.log('准备发送请求到 /chat_stream');
-                        // 发送请求到流式端点
-                        const formData = new FormData(chatForm);
-                        // 确保topic字段被正确设置
-                        formData.set('topic', topic);
-                        
-                        const response = await fetch('/chat_stream', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-                        
-                        console.log('收到响应，状态码:', response.status);
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder('utf-8');
-                        let accumulatedText = '';
-                        let buffer = ''; // 用于累积不完整的数据
-                        
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) {
-                                console.log('流式响应结束');
-                                // 隐藏状态指示器
-                                statusIndicator.style.display = "none";
-                                break;
-                            }
-                            
-                            const chunk = decoder.decode(value, { stream: true });
-                            buffer += chunk; // 累积数据到缓冲区
-                            
-                            // 按行处理数据
-                            const lines = buffer.split('\n');
-                            buffer = lines.pop(); // 保留最后一个可能不完整的行在缓冲区中
-                            
-                            for (const line of lines) {
-                                if (line.trim() === '') continue; // 跳过空行
-                                
-                                // 解析JSON格式的消息
-                                    try {
-                                        const message = JSON.parse(line);
-                                        console.log('Received message:', message); // 调试信息
-                                        if (message.type === "status") {
-                                            // 显示状态消息
-                                            console.log('Setting status text to:', message.content); // 调试信息
-                                            statusIndicator.textContent = message.content;
-                                            console.log('Setting status display to block'); // 调试信息
-                                            statusIndicator.style.display = "block";
-                                            console.log('Showing status:', message.content); // 调试信息
-                                        } else if (message.type === "output") {
-                                            // 隐藏状态消息
-                                            console.log('Setting status display to none for output'); // 调试信息
-                                            statusIndicator.style.display = "none";
-                                            // 更新AI响应
-                                            accumulatedText += message.content;
-                                            
-                                            // 检查是否包含PDF下载链接
-                                            if (message.content.includes("下载链接：")) {
-                                                // 提取下载链接
-                                                const downloadLinkMatch = message.content.match(/下载链接：(\/download\/[^\s]+)/);
-                                                if (downloadLinkMatch) {
-                                                    const downloadLink = downloadLinkMatch[1];
-                                                    // 将文本中的链接替换为可点击的下载按钮
-                                                    const displayText = accumulatedText.replace(
-                                                        /下载链接：(\/download\/[^\s]+)/, 
-                                                        `<a href="${downloadLink}" class="pdf-download-link" target="_blank" download>点击下载PDF</a>`
-                                                    );
-                                                    aiResponseDiv.innerHTML = displayText;
-                                                } else {
-                                                    aiResponseDiv.textContent = accumulatedText;
-                                                }
-                                            } else {
-                                                aiResponseDiv.textContent = accumulatedText;
-                                            }
-                                            console.log('Output received, hiding status'); // 调试信息
-                                        }
-                                    } catch (e) {
-                                        // 如果不是JSON格式，按原来的方式处理
-                                        console.log('Non-JSON message:', line); // 调试信息
-                                        accumulatedText += line;
-                                        aiResponseDiv.textContent = accumulatedText;
-                                    }
-                            }
-                            
-                            // 滚动到底部
-                            chatWindow.scrollTop = chatWindow.scrollHeight;
-                        }
-                        
-                        // 在流式响应结束后，更新聊天历史记录
-                        // 不需要重新加载页面，保持当前界面状态
-                    } catch (error) {
-                        console.error('Error:', error);
-                        aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
-                    }
+                    historyList.innerHTML = '';
+                    data.forEach(item => {
+                        const listItem = document.createElement('li');
+                        const link = document.createElement('a');
+                        link.href = `/history/${item.id}`;
+                        link.textContent = item.title;
+                        listItem.appendChild(link);
+                        historyList.appendChild(listItem);
+                    });
                 });
-            }
-        });
-        
-        // 创建流星粒子效果 - 彩色增强版
-        document.addEventListener('DOMContentLoaded', function() {
-            const starsContainer = document.getElementById('stars-container');
-            const starCount = 50; // 调整粒子数量
-            
-            // 创建流星粒子
-            for (let i = 0; i < starCount; i++) {
-                createStar();
-            }
-            
-            function createStar() {
-                // 随机位置 (页面顶部和左侧一定范围内)
-                const startX = Math.random() * window.innerWidth * 1.5;
-                const startY = Math.random() * -window.innerHeight * 0.5;
-                
-                // 更长的动画持续时间 (6-10秒)
-                const duration = Math.random() * 4 + 6;
-                
-                // 随机动画延迟
-                const delay = Math.random() * 5;
-                
-                // 创建主粒子
-                const star = document.createElement('div');
-                star.classList.add('star');
-                
-                // 粒子尺寸 (6-10px)，模拟真实的流星
-                const size = Math.random() * 4 + 6;
-                star.style.width = `${size}px`;
-                star.style.height = `${size}px`;
-                
-                star.style.boxShadow = `0 0 ${size/2}px #ffffff, 0 0 ${size}px #ffffff`; // 添加白色发光效果
-                
-                star.style.left = `${startX}px`;
-                star.style.top = `${startY}px`;
-                
-                // 更高的透明度，使粒子更明显
-                star.style.opacity = Math.random() * 0.7 + 0.3;
-                
-                star.style.animationDuration = `${duration}s`;
-                star.style.animationDelay = `${delay}s`;
-                
-                // 创建连续的拖尾效果
-                const trailLength = 15; // 拖尾粒子数量，控制拖尾长度
-                for (let i = 1; i <= trailLength; i++) {
-                    const trail = document.createElement('div');
-                    trail.classList.add('star');
-                    
-                    // 拖尾粒子逐渐变小
-                    const trailSize = size * (1 - i * 0.05);
-                    trail.style.width = `${trailSize > 1 ? trailSize : 1}px`;
-                    trail.style.height = `${trailSize > 1 ? trailSize : 1}px`;
-                    
-                    // 拖尾粒子使用白色但透明度递减
-                    trail.style.opacity = (0.8 - i * 0.05) * (Math.random() * 0.3 + 0.2);
-                    
-                    // 设置拖尾粒子的位置和动画
-                    trail.style.left = `${startX}px`;
-                    trail.style.top = `${startY}px`;
-                    trail.style.animationDuration = `${duration}s`;
-                    trail.style.animationDelay = `${delay + i * 0.02}s`; // 依次延迟出现
-                    
-                    starsContainer.appendChild(trail);
-                }
-                
-                starsContainer.appendChild(star);
-                
-                // 动画结束后移除元素并创建新的流星
-                setTimeout(() => {
-                    // 移除主粒子和所有拖尾粒子
-                    star.remove();
-                    // 获取所有拖尾粒子并移除它们
-                    const trails = starsContainer.querySelectorAll('.star');
-                    for (let i = 0; i < Math.min(trailLength, trails.length); i++) {
-                        if (trails[i]) trails[i].remove();
-                    }
-                    // 重新创建新的流星
-                    createStar();
-                }, duration * 1000);
-            }
-        });
-        
-        // 鼠标指针环绕粒子效果
-        document.addEventListener('DOMContentLoaded', function() {
-            const cursorParticles = document.getElementById('cursor-particles');
-            const particleCount = 12; // 环绕粒子数量
-            let mouseX = 0;
-            let mouseY = 0;
-            let particles = [];
-            
-            // 创建环绕粒子
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('cursor-particle');
-                
-                // 粒子尺寸 (3-5px)
-                const size = Math.random() * 2 + 3;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // 添加淡蓝色发光效果
-                particle.style.backgroundColor = '#87CEEB'; // 淡蓝色
-                particle.style.boxShadow = `0 0 ${size/2}px #87CEEB, 0 0 ${size}px #87CEEB`;
-                
-                // 初始透明度
-                particle.style.opacity = Math.random() * 0.5 + 0.3;
-                
-                cursorParticles.appendChild(particle);
-                particles.push({
-                    element: particle,
-                    angle: (i / particleCount) * Math.PI * 2, // 初始角度
-                    distance: Math.random() * 20 + 20, // 距离鼠标指针的距离
-                    speed: Math.random() * 0.05 + 0.02, // 旋转速度
-                    size: size
-                });
-            }
-            
-            // 监听鼠标移动
-            document.addEventListener('mousemove', (e) => {
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
-            
-            // 粒子动画循环
-            function animateParticles() {
-                particles.forEach(particle => {
-                    // 更新角度
-                    particle.angle += particle.speed;
-                    
-                    // 计算新位置
-                    const x = mouseX + Math.cos(particle.angle) * particle.distance;
-                    const y = mouseY + Math.sin(particle.angle) * particle.distance;
-                    
-                    // 应用新位置
-                    particle.element.style.left = `${x}px`;
-                    particle.element.style.top = `${y}px`;
-                    
-                    // 随机改变透明度产生闪烁效果
-                    particle.element.style.opacity = Math.random() * 0.5 + 0.3;
-                });
-                
-                requestAnimationFrame(animateParticles);
-            }
-            
-            // 启动动画
-            animateParticles();
-        });
-        
-        // 语言切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const langToggle = document.getElementById('lang-toggle');
-            const pageTitle = document.getElementById('page-title');
-            const modelSelection = document.getElementById('model-selection');
-            const topicLabel = document.getElementById('topic-label');
-            const submitBtn = document.getElementById('submit-btn');
-            const chatSubmitBtn = document.getElementById('chat-submit-btn');
-            const topicInput = document.getElementById('topic-input');
-            const chatTopicInput = document.getElementById('chat-topic-input');
-            const modelProviderLabel = document.getElementById('model-provider-label');
-            const modelNameLabel = document.getElementById('model-name-label');
-            const maxiterLabel = document.getElementById('maxiter-label');
-            const backLink = document.querySelector('.back-link');
-            const languageInput = document.getElementById('language-input');
-            const chatLanguageInput = document.getElementById('chat-language-input');
-            
-            // 检查当前语言设置
-            const currentLang = languageInput ? languageInput.value : 'zh';
-            
-            // 如果当前是英文，更新按钮文本
-            if (currentLang === 'en') {
-                updateUIToEnglish();
-            }
-            
-            // 语言切换事件处理
-            if (langToggle) {
-                langToggle.addEventListener('click', function() {
-                    if (langToggle.textContent === 'English') {
-                        updateUIToEnglish();
-                        // 更新隐藏字段值
-                        if (languageInput) languageInput.value = 'en';
-                        if (chatLanguageInput) chatLanguageInput.value = 'en';
-                    } else {
-                        updateUIToChinese();
-                        // 更新隐藏字段值
-                        if (languageInput) languageInput.value = 'zh';
-                        if (chatLanguageInput) chatLanguageInput.value = 'zh';
-                    }
-                });
-            }
-            
-            // 切换到英文界面
-            function updateUIToEnglish() {
-                langToggle.textContent = '中文';
-                pageTitle.textContent = 'News Chat';
-                
-                if (modelSelection) {
-                    const modelSelectionTitle = modelSelection.querySelector('p');
-                    if (modelSelectionTitle) modelSelectionTitle.textContent = 'Select model and parameters to start conversation:';
-                }
-                
-                if (modelProviderLabel) modelProviderLabel.textContent = 'Select Model Provider';
-                if (modelNameLabel) modelNameLabel.textContent = 'Select Model';
-                if (maxiterLabel) maxiterLabel.textContent = 'Max Iterations';
-                if (topicLabel) topicLabel.textContent = 'Enter Starting Topic';
-                if (submitBtn) submitBtn.textContent = 'Start Conversation';
-                if (chatSubmitBtn) chatSubmitBtn.textContent = 'Send';
-                if (backLink) backLink.textContent = 'Start New Conversation';
-                
-                // 更新输入框占位符
-                if (topicInput) topicInput.placeholder = 'e.g., Latest developments in quantum computing';
-                if (chatTopicInput) chatTopicInput.placeholder = 'Continue asking...';
-            }
-            
-            // 切换到中文界面
-            function updateUIToChinese() {
-                langToggle.textContent = 'English';
-                pageTitle.textContent = '新闻对话';
-                
-                if (modelSelection) {
-                    const modelSelectionTitle = modelSelection.querySelector('p');
-                    if (modelSelectionTitle) modelSelectionTitle.textContent = '选择模型和参数开始对话：';
-                }
-                
-                if (modelProviderLabel) modelProviderLabel.textContent = '选择模型提供商';
-                if (modelNameLabel) modelNameLabel.textContent = '选择模型';
-                if (maxiterLabel) maxiterLabel.textContent = '最大迭代次数';
-                if (topicLabel) topicLabel.textContent = '输入起始主题';
-                if (submitBtn) submitBtn.textContent = '开始对话';
-                if (chatSubmitBtn) chatSubmitBtn.textContent = '发送';
-                if (backLink) backLink.textContent = '开始新对话';
-                
-                // 更新输入框占位符
-                if (topicInput) topicInput.placeholder = '例如：量子计算的最新进展';
-                if (chatTopicInput) chatTopicInput.placeholder = '继续提问...';
-            }
-        });
-        
-        // 文本区域自动扩展功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const textareas = document.querySelectorAll('.expanding-textarea');
-            
-            textareas.forEach(function(textarea) {
-                // 初始化时调整高度
-                adjustTextareaHeight(textarea);
-                
-                // 添加输入事件监听器
-                textarea.addEventListener('input', function() {
-                    adjustTextareaHeight(this);
-                });
-            });
-            
-            // 调整文本区域高度的函数
-            function adjustTextareaHeight(textarea) {
-                // 重置高度以获取滚动高度
-                textarea.style.height = 'auto';
-                
-                // 设置新高度，但不超过最大高度
-                const newHeight = Math.min(textarea.scrollHeight, 200); // 最大高度200px
-                textarea.style.height = newHeight + 'px';
-            }
         });
     </script>
 </body>
