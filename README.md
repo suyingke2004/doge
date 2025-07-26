@@ -1,5 +1,7 @@
 # Newsletter Generation Agent
 
+![Example Screenshot](figure/example.png)
+
 ## Project Overview
 
 The Newsletter Generation Agent is an intelligent AI assistant that automatically gathers relevant information and generates concise, engaging, and informative newsletters based on user-specified topics. It integrates multiple information sources, including news websites, Reddit discussions, and RSS feeds, to provide a comprehensive content overview.
