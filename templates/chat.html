@@ -67,7 +67,7 @@
                 
                 <div class="form-group">
                     <label for="topic-input" id="topic-label">输入起始主题</label>
-                    <input type="text" id="topic-input" name="topic" placeholder="例如：量子计算的最新进展" required>
+                    <textarea id="topic-input" name="topic" class="expanding-textarea" placeholder="例如：量子计算的最新进展" required></textarea>
                 </div>
                 
                 <!-- 隐藏的语言字段 -->
@@ -79,7 +79,7 @@
         
         <!-- 隐藏的聊天表单 -->
         <form id="chat-form" class="chat-form" style="display: none;">
-            <input type="text" id="chat-topic-input" name="topic" placeholder="继续提问..." required>
+            <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="继续提问..." required></textarea>
             <input type="hidden" name="model_provider" id="chat-model-provider">
             <input type="hidden" name="model_name" id="chat-model-name">
             <input type="hidden" name="language" id="chat-language-input" value="zh">
@@ -88,7 +88,7 @@
         {% else %}
         <!-- 如果有聊天历史，只显示聊天表单 -->
         <form id="chat-form" class="chat-form">
-            <input type="text" id="chat-topic-input" name="topic" placeholder="继续提问..." required>
+            <textarea id="chat-topic-input" name="topic" class="expanding-textarea" placeholder="继续提问..." required></textarea>
             <input type="hidden" name="model_provider" value="{{ session.get('model_provider', 'deepseek') }}">
             {% if session.get('model_name') %}
             <input type="hidden" name="model_name" value="{{ session.get('model_name') }}">
@@ -702,6 +702,31 @@
                 // 更新输入框占位符
                 if (topicInput) topicInput.placeholder = '例如：量子计算的最新进展';
                 if (chatTopicInput) chatTopicInput.placeholder = '继续提问...';
+            }
+        });
+        
+        // 文本区域自动扩展功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const textareas = document.querySelectorAll('.expanding-textarea');
+            
+            textareas.forEach(function(textarea) {
+                // 初始化时调整高度
+                adjustTextareaHeight(textarea);
+                
+                // 添加输入事件监听器
+                textarea.addEventListener('input', function() {
+                    adjustTextareaHeight(this);
+                });
+            });
+            
+            // 调整文本区域高度的函数
+            function adjustTextareaHeight(textarea) {
+                // 重置高度以获取滚动高度
+                textarea.style.height = 'auto';
+                
+                // 设置新高度，但不超过最大高度
+                const newHeight = Math.min(textarea.scrollHeight, 200); // 最大高度200px
+                textarea.style.height = newHeight + 'px';
             }
         });
     </script>
