@@ -426,7 +426,25 @@
                                             statusIndicator.style.display = "none";
                                             // 更新AI响应
                                             accumulatedText += message.content;
-                                            aiResponseDiv.textContent = accumulatedText;
+                                            
+                                            // 检查是否包含PDF下载链接
+                                            if (message.content.includes("下载链接：")) {
+                                                // 提取下载链接
+                                                const downloadLinkMatch = message.content.match(/下载链接：(\/download\/[^\s]+)/);
+                                                if (downloadLinkMatch) {
+                                                    const downloadLink = downloadLinkMatch[1];
+                                                    // 将文本中的链接替换为可点击的下载按钮
+                                                    const displayText = accumulatedText.replace(
+                                                        /下载链接：(\/download\/[^\s]+)/, 
+                                                        `<a href="${downloadLink}" class="pdf-download-link" target="_blank" download>点击下载PDF</a>`
+                                                    );
+                                                    aiResponseDiv.innerHTML = displayText;
+                                                } else {
+                                                    aiResponseDiv.textContent = accumulatedText;
+                                                }
+                                            } else {
+                                                aiResponseDiv.textContent = accumulatedText;
+                                            }
                                             console.log('Output received, hiding status'); // 调试信息
                                         }
                                     } catch (e) {
