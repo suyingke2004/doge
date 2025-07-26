@@ -11,3 +11,4 @@ CODE_STYLE_GUIDE.md
 debug_*.py
 templates/debug_*.html
 tests/debug_*.py
+dist/
