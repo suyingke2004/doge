@@ -181,6 +181,7 @@ button:hover {
     display: flex;
     margin-bottom: 15px;
     width: 100%;
+    align-items: flex-start;
 }
 
 .user-message {
@@ -205,7 +206,7 @@ button:hover {
     padding: 10px 15px;
     border-radius: 12px;
     margin: 0 10px;
-    min-width: 100px; /* 确保消息框有最小宽度 */
+    min-width: 100px;
 }
 
 .user-message .message-content {
@@ -227,9 +228,7 @@ button:hover {
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
-    align-self: flex-start; /* 确保头像与消息内容顶部对齐 */
-    border: 2px solid #ccc; /* 添加边框以便调试 */
-    background-color: #eee; /* 添加背景色以便调试 */
+    align-self: flex-start;
 }
 
 .ai-message p {

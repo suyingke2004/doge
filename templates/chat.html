@@ -26,26 +26,22 @@
             {% for message in chat_history %}
                 {% if message.type == 'human' %}
                     <div class="chat-message user-message">
-                        <div class="message-wrapper">
-                            <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
-                            <div class="message-content">
-                                <div class="message-header">
-                                    <span>你</span>
-                                </div>
-                                <p>{{ message.content }}</p>
+                        <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span>你</span>
                             </div>
+                            <p>{{ message.content }}</p>
                         </div>
                     </div>
                 {% elif message.type == 'ai' %}
                     <div class="chat-message ai-message">
-                        <div class="message-wrapper">
-                            <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
-                            <div class="message-content">
-                                <div class="message-header">
-                                    <span>AI助手</span>
-                                </div>
-                                <div>{{ message.content_html | safe }}</div>
+                        <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span>AI助手</span>
                             </div>
+                            <div>{{ message.content_html | safe }}</div>
                         </div>
                     </div>
                 {% endif %}
