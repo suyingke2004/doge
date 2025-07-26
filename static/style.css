@@ -134,7 +134,7 @@ input[type="text"]:focus {
 /* 可扩展文本区域样式 */
 .expanding-textarea {
     width: 100%;
-    min-height: 80px;
+    min-height: 45px;
     max-height: 200px;
     padding: 12px;
     font-size: 1em;
@@ -321,6 +321,9 @@ button:hover {
     color: #6c757d;
     display: inline-block;
     border: 2px solid #007bff; /* 添加边框以便调试 */
+    height: 60px;
+    line-height: 40px; /* 垂直居中文字 */
+    box-sizing: border-box;
 }
 
 /* 语言切换按钮 */
