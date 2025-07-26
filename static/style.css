@@ -166,6 +166,7 @@ button:hover {
 }
 
 /* 聊天窗口样式 */
+/* 聊天消息样式 */
 .chat-window {
     height: 400px;
     overflow-y: auto;
@@ -181,14 +182,23 @@ button:hover {
     margin-bottom: 15px;
     padding: 0;
     border-radius: 8px;
+    align-items: flex-start; /* 垂直对齐到顶部 */
 }
 
 .user-message {
     justify-content: flex-end;
+    flex-direction: row-reverse; /* 反转方向，让头像在右侧 */
 }
 
 .ai-message {
     justify-content: flex-start;
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin: 0;
 }
 
 .user-message .message-content {
@@ -210,25 +220,7 @@ button:hover {
     border-radius: 50%;
     object-fit: cover;
     margin: 0 10px;
-}
-
-.user-avatar {
-    order: 2;
-    margin-left: 10px;
-    margin-right: 0;
-}
-
-.ai-avatar {
-    order: 1;
-    margin-right: 10px;
-    margin-left: 0;
-}
-
-.message-content {
-    max-width: 80%;
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin: 0;
+    flex-shrink: 0; /* 防止头像被压缩 */
 }
 
 .ai-message p {

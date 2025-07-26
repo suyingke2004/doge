@@ -26,17 +26,17 @@
             {% for message in chat_history %}
                 {% if message.type == 'human' %}
                     <div class="chat-message user-message">
+                        <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar">
                         <div class="message-content">
                             <div class="message-header">
                                 <span>你</span>
                             </div>
                             <p>{{ message.content }}</p>
                         </div>
-                        <img src="{{ url_for('static', filename='user.jpg') }}" alt="User Avatar" class="avatar user-avatar">
                     </div>
                 {% elif message.type == 'ai' %}
                     <div class="chat-message ai-message">
-                        <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar ai-avatar">
+                        <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
                         <div class="message-content">
                             <div class="message-header">
                                 <span>AI助手</span>
