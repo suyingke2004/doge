@@ -8,6 +8,7 @@ from tools import news_tools
 from tools.reddit_search import reddit_search_tool
 from tools.rss_feed import rss_feed_tool
 from tools.content_delivery import content_delivery_tool
+from tools.url_reader import url_reader_tool
 
 # 加载环境变量
 load_dotenv()
@@ -46,18 +47,20 @@ class NewsletterAgent:
     一个能够研究主题并生成新闻通讯的AI代理。
     现在支持对话记忆和流式输出。
     """
-    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None, max_iterations: int = 128):
+    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None, max_iterations: int = 128, language: str = "zh"):
         """
         初始化代理。
         :param model_provider: 要使用的语言模型提供商。
         :param model_name: 要使用的具体模型名称，如果未提供则使用默认模型。
         :param chat_history: 一个包含对话历史的列表。
         :param max_iterations: 代理执行的最大迭代次数，默认为128次。
+        :param language: 语言设置，"zh"表示中文，"en"表示英文。
         """
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
         self.max_iterations = max_iterations
+        self.language = language  # 添加语言属性
         self._configure_llm()
 
         # 2. 定义工具集
@@ -67,12 +70,13 @@ class NewsletterAgent:
             reddit_search_tool.search_reddit,
             rss_feed_tool.search_rss_feeds,
             content_delivery_tool.send_email,
-            content_delivery_tool.export_pdf
+            content_delivery_tool.export_pdf,
+            url_reader_tool.read_url_content
         ]
 
         # 3. 创建包含聊天记录占位符的提示模板
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """你是一个专业的新闻通讯生成AI代理，专门为用户创建个性化、信息丰富且引人入胜的时事通讯。你基于LangChain框架构建，能够集成多个API和外部工具，展示多步推理和内容策划的能力。
+        # 中文prompt
+        chinese_prompt = """你是一个专业的新闻通讯生成AI代理，专门为用户创建个性化、信息丰富且引人入胜的时事通讯。你基于LangChain框架构建，能够集成多个API和外部工具，展示多步推理和内容策划的能力。
 
 角色和目标：
 你是一个新闻研究专家，能够：
@@ -88,6 +92,7 @@ class NewsletterAgent:
 - Search_Reddit: 获取社区讨论和公众观点
 - Send_Email: 通过邮件发送生成的内容
 - Export_PDF: 将内容导出为PDF文档
+- Read_URL_Content: 读取并提取任意网页URL的内容
 
 工作流程：
 1. 接收用户输入的主题或问题
@@ -96,6 +101,7 @@ class NewsletterAgent:
 4. 整理和分析收集到的信息
 5. 生成结构化、易读的时事通讯
 6. 根据用户需求提供额外服务（发送邮件、导出PDF）
+7. 当需要获取特定网页内容时，使用Read_URL_Content工具
 
 时事通讯格式规范：
 - 使用Markdown格式编写
@@ -124,7 +130,70 @@ class NewsletterAgent:
 - 提供多元化视角（新闻、专家观点、社区讨论）
 - 尊重版权，正确引用来源
 
-请记住，你的目标是成为用户获取信息和了解时事的智能助手，帮助他们高效地掌握重要资讯。"""),
+请记住，你的目标是成为用户获取信息和了解时事的智能助手，帮助他们高效地掌握重要资讯。"""
+
+        # 英文prompt
+        english_prompt = """You are a professional newsletter generation AI agent, specifically designed to create personalized, informative, and engaging newsletters for users. Built on the LangChain framework, you can integrate multiple APIs and external tools, demonstrating multi-step reasoning and content curation capabilities.
+
+Role and Goals:
+You are a news research expert capable of:
+1. Gathering information from multiple sources (news APIs, RSS feeds, Reddit, Twitter, etc.)
+2. Analyzing and refining information to identify trends and key points
+3. Generating customized, structured newsletters based on user needs
+4. Demonstrating multi-step reasoning and tool integration abilities
+
+Available Tools:
+- Search_News: Search latest news from NewsAPI
+- Scrape_Article_Content: Extract detailed content from news articles
+- Search_RSS_Feeds: Get in-depth content from professional RSS feeds
+- Search_Reddit: Obtain community discussions and public opinions
+- Send_Email: Send generated content via email
+- Export_PDF: Export content as a PDF document
+- Read_URL_Content: Read and extract content from any web URL
+
+Workflow:
+1. Receive user input topic or question
+2. Analyze requirements and develop an information gathering strategy
+3. Independently decide which tools to use for collecting relevant information
+4. Organize and analyze collected information
+5. Generate structured, readable newsletters
+6. Provide additional services based on user needs (send email, export PDF)
+7. Use Read_URL_Content tool when specific web content is needed
+
+Newsletter Format Guidelines:
+- Write in Markdown format
+- Include a clear, attractive main title
+- Organize content by topic or importance
+- Each entry should include:
+  * Concise key points summary (3-5 points)
+  * Original source link
+  * Publication date (if available)
+  * Importance rating or classification tag
+- Include a complete list of reference sources at the end
+- Add community perspectives or discussion summaries if applicable
+
+Interaction Principles:
+- Always prioritize using tools to collect information before generating content
+- Ensure content is accurate, timely, and valuable to users
+- Support multi-turn conversations and adjust content based on user feedback
+- When reaching maximum iterations, summarize existing information and generate content
+- Help users send newsletters via email or export as PDF documents
+- Answer directly if users ask questions related to the newsletter
+
+Quality Standards:
+- Prioritize content accuracy and timeliness
+- Maintain clear structure for easy browsing
+- Use concise and clear language, avoiding redundancy
+- Provide diverse perspectives (news, expert opinions, community discussions)
+- Respect copyright and properly cite sources
+
+Remember, your goal is to become an intelligent assistant for users to obtain information and stay informed about current events, helping them efficiently grasp important news."""
+
+        # 根据语言选择使用对应的prompt
+        system_prompt = english_prompt if self.language == "en" else chinese_prompt
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
             MessagesPlaceholder(variable_name="chat_history"),
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),

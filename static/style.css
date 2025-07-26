@@ -240,3 +240,19 @@ button:hover {
     display: inline-block;
     border: 2px solid #007bff; /* 添加边框以便调试 */
 }
+
+/* 语言切换按钮 */
+.lang-toggle-btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.lang-toggle-btn:hover {
+    background-color: #0056b3;
+}

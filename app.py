@@ -135,8 +135,8 @@ def chat_stream():
         print(f"Received form data: {dict(request.form)}")
         print(f"user_input: '{user_input}'")
         
-        # 如果是新对话，获取模型选择和 maxiter 参数并存入 session
-        # 对于已存在的对话，从 session 中获取模型选择
+        # 如果是新对话，获取模型选择、语言和 maxiter 参数并存入 session
+        # 对于已存在的对话，从 session 中获取模型选择和语言
         if 'chat_history' not in session:
             model_provider = request.form.get('model_provider', 'deepseek')
             model_name = request.form.get('model_name', '').strip()
@@ -144,14 +144,18 @@ def chat_stream():
             model_name = model_name if model_name else None
             # 获取 maxiter 参数，默认为 128
             maxiter = int(request.form.get('maxiter', 128))
+            # 获取语言参数，默认为中文
+            language = request.form.get('language', 'zh')
             
             session['model_provider'] = model_provider
             session['model_name'] = model_name
             session['maxiter'] = maxiter
+            session['language'] = language
         else:
             model_provider = session.get('model_provider', 'deepseek')
             model_name = session.get('model_name', None)
             maxiter = session.get('maxiter', 128)
+            language = session.get('language', 'zh')
 
         # 更宽松的输入验证 - 只有当输入为 None 时才报错
         if user_input is None:
@@ -169,12 +173,13 @@ def chat_stream():
         chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
 
         try:
-            # 创建代理实例，并传入历史记录和 maxiter 参数
+            # 创建代理实例，并传入历史记录、 maxiter 和 language 参数
             agent = NewsletterAgent(
                 model_provider=model_provider, 
                 model_name=model_name, 
                 chat_history=chat_history_messages,
-                max_iterations=maxiter
+                max_iterations=maxiter,
+                language=language
             )
             
             # 使用流式方式调用代理生成内容

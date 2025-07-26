@@ -14,7 +14,12 @@
     <div class="cursor-particles" id="cursor-particles"></div>
     
     <div class="container">
-        <h1>新闻对话</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 id="page-title">新闻对话</h1>
+            <div>
+                <button id="lang-toggle" class="lang-toggle-btn">English</button>
+            </div>
+        </div>
         
         <!-- 显示聊天历史 -->
         <div class="chat-window" id="chat-window">
@@ -38,7 +43,7 @@
             <p>选择模型和参数开始对话：</p>
             <form id="model-form" class="model-form">
                 <div class="form-group">
-                    <label for="model-provider">选择模型提供商</label>
+                    <label for="model-provider" id="model-provider-label">选择模型提供商</label>
                     <select name="model_provider" id="model-provider">
                         <option value="deepseek" selected>DeepSeek</option>
                         <option value="openai">OpenAI</option>
@@ -49,23 +54,26 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="model-name">选择模型</label>
+                    <label for="model-name" id="model-name-label">选择模型</label>
                     <select name="model_name" id="model-name">
                         <!-- 默认模型选项将根据提供商动态生成 -->
                     </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="maxiter">最大迭代次数</label>
+                    <label for="maxiter" id="maxiter-label">最大迭代次数</label>
                     <input type="number" id="maxiter" name="maxiter" min="1" value="128">
                 </div>
                 
                 <div class="form-group">
-                    <label for="topic-input">输入起始主题</label>
+                    <label for="topic-input" id="topic-label">输入起始主题</label>
                     <input type="text" id="topic-input" name="topic" placeholder="例如：量子计算的最新进展" required>
                 </div>
                 
-                <button type="submit">开始对话</button>
+                <!-- 隐藏的语言字段 -->
+                <input type="hidden" id="language-input" name="language" value="zh">
+                
+                <button type="submit" id="submit-btn">开始对话</button>
             </form>
         </div>
         
@@ -74,7 +82,8 @@
             <input type="text" id="chat-topic-input" name="topic" placeholder="继续提问..." required>
             <input type="hidden" name="model_provider" id="chat-model-provider">
             <input type="hidden" name="model_name" id="chat-model-name">
-            <button type="submit">发送</button>
+            <input type="hidden" name="language" id="chat-language-input" value="zh">
+            <button type="submit" id="chat-submit-btn">发送</button>
         </form>
         {% else %}
         <!-- 如果有聊天历史，只显示聊天表单 -->
@@ -84,7 +93,8 @@
             {% if session.get('model_name') %}
             <input type="hidden" name="model_name" value="{{ session.get('model_name') }}">
             {% endif %}
-            <button type="submit">发送</button>
+            <input type="hidden" name="language" id="chat-language-input" value="{{ session.get('language', 'zh') }}">
+            <button type="submit" id="chat-submit-btn">发送</button>
         </form>
         {% endif %}
 
@@ -586,6 +596,95 @@
             
             // 启动动画
             animateParticles();
+        });
+        
+        // 语言切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const langToggle = document.getElementById('lang-toggle');
+            const pageTitle = document.getElementById('page-title');
+            const modelSelection = document.getElementById('model-selection');
+            const topicLabel = document.getElementById('topic-label');
+            const submitBtn = document.getElementById('submit-btn');
+            const chatSubmitBtn = document.getElementById('chat-submit-btn');
+            const topicInput = document.getElementById('topic-input');
+            const chatTopicInput = document.getElementById('chat-topic-input');
+            const modelProviderLabel = document.getElementById('model-provider-label');
+            const modelNameLabel = document.getElementById('model-name-label');
+            const maxiterLabel = document.getElementById('maxiter-label');
+            const backLink = document.querySelector('.back-link');
+            const languageInput = document.getElementById('language-input');
+            const chatLanguageInput = document.getElementById('chat-language-input');
+            
+            // 检查当前语言设置
+            const currentLang = languageInput ? languageInput.value : 'zh';
+            
+            // 如果当前是英文，更新按钮文本
+            if (currentLang === 'en') {
+                updateUIToEnglish();
+            }
+            
+            // 语言切换事件处理
+            if (langToggle) {
+                langToggle.addEventListener('click', function() {
+                    if (langToggle.textContent === 'English') {
+                        updateUIToEnglish();
+                        // 更新隐藏字段值
+                        if (languageInput) languageInput.value = 'en';
+                        if (chatLanguageInput) chatLanguageInput.value = 'en';
+                    } else {
+                        updateUIToChinese();
+                        // 更新隐藏字段值
+                        if (languageInput) languageInput.value = 'zh';
+                        if (chatLanguageInput) chatLanguageInput.value = 'zh';
+                    }
+                });
+            }
+            
+            // 切换到英文界面
+            function updateUIToEnglish() {
+                langToggle.textContent = '中文';
+                pageTitle.textContent = 'News Chat';
+                
+                if (modelSelection) {
+                    const modelSelectionTitle = modelSelection.querySelector('p');
+                    if (modelSelectionTitle) modelSelectionTitle.textContent = 'Select model and parameters to start conversation:';
+                }
+                
+                if (modelProviderLabel) modelProviderLabel.textContent = 'Select Model Provider';
+                if (modelNameLabel) modelNameLabel.textContent = 'Select Model';
+                if (maxiterLabel) maxiterLabel.textContent = 'Max Iterations';
+                if (topicLabel) topicLabel.textContent = 'Enter Starting Topic';
+                if (submitBtn) submitBtn.textContent = 'Start Conversation';
+                if (chatSubmitBtn) chatSubmitBtn.textContent = 'Send';
+                if (backLink) backLink.textContent = 'Start New Conversation';
+                
+                // 更新输入框占位符
+                if (topicInput) topicInput.placeholder = 'e.g., Latest developments in quantum computing';
+                if (chatTopicInput) chatTopicInput.placeholder = 'Continue asking...';
+            }
+            
+            // 切换到中文界面
+            function updateUIToChinese() {
+                langToggle.textContent = 'English';
+                pageTitle.textContent = '新闻对话';
+                
+                if (modelSelection) {
+                    const modelSelectionTitle = modelSelection.querySelector('p');
+                    if (modelSelectionTitle) modelSelectionTitle.textContent = '选择模型和参数开始对话：';
+                }
+                
+                if (modelProviderLabel) modelProviderLabel.textContent = '选择模型提供商';
+                if (modelNameLabel) modelNameLabel.textContent = '选择模型';
+                if (maxiterLabel) maxiterLabel.textContent = '最大迭代次数';
+                if (topicLabel) topicLabel.textContent = '输入起始主题';
+                if (submitBtn) submitBtn.textContent = '开始对话';
+                if (chatSubmitBtn) chatSubmitBtn.textContent = '发送';
+                if (backLink) backLink.textContent = '开始新对话';
+                
+                // 更新输入框占位符
+                if (topicInput) topicInput.placeholder = '例如：量子计算的最新进展';
+                if (chatTopicInput) chatTopicInput.placeholder = '继续提问...';
+            }
         });
     </script>
 </body>

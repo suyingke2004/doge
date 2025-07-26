@@ -75,6 +75,10 @@ The application will be available at `http://localhost:5001`.
    - Send generated content via email
    - Export as PDF files
 
+7. **Bilingual Support**:
+   - Switch between Chinese and English interfaces
+   - Generate content in both languages with appropriate prompts
+
 ## Tech Stack
 
 - **Language**: Python 3.11
@@ -91,6 +95,8 @@ The application will be available at `http://localhost:5001`.
   - newspaper3k (web article scraping and parsing)
   - praw (Reddit API integration)
   - feedparser (RSS feed parsing)
+  - beautifulsoup4 (general web content extraction)
+  - requests (HTTP requests for web content)
 - **Content Delivery**:
   - sendgrid (email sending)
   - weasyprint (PDF export)
