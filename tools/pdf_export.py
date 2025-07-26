@@ -65,8 +65,8 @@ class PDFExportTool:
             # 生成PDF文件
             pdfkit.from_string(html_content, file_path)
             
-            # 返回可供Web访问的相对URL
-            file_url = f"/{save_dir.replace(os.path.sep, '/')}/{filename}"
+            # 返回可供Web访问的URL
+            file_url = f"/static/downloads/{filename}"
             return f"PDF文件已生成，下载链接: {file_url}"
             
         except Exception as e:

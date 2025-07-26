@@ -171,13 +171,13 @@
                 aiMessageDiv.innerHTML = `
                     <img src="{{ url_for('static', filename='agent.jpg') }}" alt="Agent Avatar" class="avatar">
                     <div class="message-content">
-                        <div id="ai-response"></div>
+                        <div class="ai-response-content"></div>
                         <div class="status-indicator" style="display: none;"></div>
                     </div>
                 `;
                 chatWindow.appendChild(aiMessageDiv);
                 
-                const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                const aiResponseDiv = aiMessageDiv.querySelector('.ai-response-content');
                 const statusIndicator = aiMessageDiv.querySelector('.status-indicator');
                 chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -224,7 +224,7 @@
                                 }
                             } catch (e) {
                                 accumulatedText += line;
-                                aiResponseDiv.textContent = accumulatedText;
+                                aiResponseDiv.innerHTML = accumulatedText;
                             }
                         }
                         chatWindow.scrollTop = chatWindow.scrollHeight;
