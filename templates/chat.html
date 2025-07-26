@@ -254,29 +254,42 @@
                         const decoder = new TextDecoder('utf-8');
                         let accumulatedText = '';
                         
+                        let accumulatedText = '';
+                        let buffer = ''; // 用于累积不完整的数据
+                        
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) break;
                             
                             const chunk = decoder.decode(value, { stream: true });
-                            // 解析JSON格式的消息
-                            try {
-                                const message = JSON.parse(chunk);
-                                if (message.type === "status") {
-                                    // 显示状态消息
-                                    statusIndicator.textContent = message.content;
-                                    statusIndicator.style.display = "block";
-                                } else if (message.type === "output") {
-                                    // 隐藏状态消息
-                                    statusIndicator.style.display = "none";
-                                    // 更新AI响应
-                                    accumulatedText += message.content;
+                            buffer += chunk; // 累积数据到缓冲区
+                            
+                            // 按行处理数据
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop(); // 保留最后一个可能不完整的行在缓冲区中
+                            
+                            for (const line of lines) {
+                                if (line.trim() === '') continue; // 跳过空行
+                                
+                                // 解析JSON格式的消息
+                                try {
+                                    const message = JSON.parse(line);
+                                    if (message.type === "status") {
+                                        // 显示状态消息
+                                        statusIndicator.textContent = message.content;
+                                        statusIndicator.style.display = "block";
+                                    } else if (message.type === "output") {
+                                        // 隐藏状态消息
+                                        statusIndicator.style.display = "none";
+                                        // 更新AI响应
+                                        accumulatedText += message.content;
+                                        aiResponseDiv.textContent = accumulatedText;
+                                    }
+                                } catch (e) {
+                                    // 如果不是JSON格式，按原来的方式处理
+                                    accumulatedText += line;
                                     aiResponseDiv.textContent = accumulatedText;
                                 }
-                            } catch (e) {
-                                // 如果不是JSON格式，按原来的方式处理
-                                accumulatedText += chunk;
-                                aiResponseDiv.textContent = accumulatedText;
                             }
                             
                             // 滚动到底部
@@ -359,6 +372,9 @@
                         const decoder = new TextDecoder('utf-8');
                         let accumulatedText = '';
                         
+                        let accumulatedText = '';
+                        let buffer = ''; // 用于累积不完整的数据
+                        
                         while (true) {
                             const { done, value } = await reader.read();
                             if (done) {
@@ -369,24 +385,34 @@
                             }
                             
                             const chunk = decoder.decode(value, { stream: true });
-                            // 解析JSON格式的消息
-                            try {
-                                const message = JSON.parse(chunk);
-                                if (message.type === "status") {
-                                    // 显示状态消息
-                                    statusIndicator.textContent = message.content;
-                                    statusIndicator.style.display = "block";
-                                } else if (message.type === "output") {
-                                    // 隐藏状态消息
-                                    statusIndicator.style.display = "none";
-                                    // 更新AI响应
-                                    accumulatedText += message.content;
+                            buffer += chunk; // 累积数据到缓冲区
+                            
+                            // 按行处理数据
+                            const lines = buffer.split('\n');
+                            buffer = lines.pop(); // 保留最后一个可能不完整的行在缓冲区中
+                            
+                            for (const line of lines) {
+                                if (line.trim() === '') continue; // 跳过空行
+                                
+                                // 解析JSON格式的消息
+                                try {
+                                    const message = JSON.parse(line);
+                                    if (message.type === "status") {
+                                        // 显示状态消息
+                                        statusIndicator.textContent = message.content;
+                                        statusIndicator.style.display = "block";
+                                    } else if (message.type === "output") {
+                                        // 隐藏状态消息
+                                        statusIndicator.style.display = "none";
+                                        // 更新AI响应
+                                        accumulatedText += message.content;
+                                        aiResponseDiv.textContent = accumulatedText;
+                                    }
+                                } catch (e) {
+                                    // 如果不是JSON格式，按原来的方式处理
+                                    accumulatedText += line;
                                     aiResponseDiv.textContent = accumulatedText;
                                 }
-                            } catch (e) {
-                                // 如果不是JSON格式，按原来的方式处理
-                                accumulatedText += chunk;
-                                aiResponseDiv.textContent = accumulatedText;
                             }
                             
                             // 滚动到底部
@@ -402,6 +428,86 @@
                 });
             }
         });
+        
+        // 创建流星粒子效果 - 彩色增强版
+        document.addEventListener('DOMContentLoaded', function() {
+            const starsContainer = document.getElementById('stars-container');
+            const starCount = 50; // 调整粒子数量
+            
+            // 创建流星粒子
+            for (let i = 0; i < starCount; i++) {
+                createStar();
+            }
+            
+            function createStar() {
+                // 随机位置 (页面顶部和左侧一定范围内)
+                const startX = Math.random() * window.innerWidth * 1.5;
+                const startY = Math.random() * -window.innerHeight * 0.5;
+                
+                // 更长的动画持续时间 (6-10秒)
+                const duration = Math.random() * 4 + 6;
+                
+                // 随机动画延迟
+                const delay = Math.random() * 5;
+                
+                // 创建主粒子
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // 粒子尺寸 (6-10px)，模拟真实的流星
+                const size = Math.random() * 4 + 6;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                star.style.boxShadow = `0 0 ${size/2}px #ffffff, 0 0 ${size}px #ffffff`; // 添加白色发光效果
+                
+                star.style.left = `${startX}px`;
+                star.style.top = `${startY}px`;
+                
+                // 更高的透明度，使粒子更明显
+                star.style.opacity = Math.random() * 0.7 + 0.3;
+                
+                star.style.animationDuration = `${duration}s`;
+                star.style.animationDelay = `${delay}s`;
+                
+                // 创建连续的拖尾效果
+                const trailLength = 15; // 拖尾粒子数量，控制拖尾长度
+                for (let i = 1; i <= trailLength; i++) {
+                    const trail = document.createElement('div');
+                    trail.classList.add('star');
+                    
+                    // 拖尾粒子逐渐变小
+                    const trailSize = size * (1 - i * 0.05);
+                    trail.style.width = `${trailSize > 1 ? trailSize : 1}px`;
+                    trail.style.height = `${trailSize > 1 ? trailSize : 1}px`;
+                    
+                    // 拖尾粒子使用白色但透明度递减
+                    trail.style.opacity = (0.8 - i * 0.05) * (Math.random() * 0.3 + 0.2);
+                    
+                    // 设置拖尾粒子的位置和动画
+                    trail.style.left = `${startX}px`;
+                    trail.style.top = `${startY}px`;
+                    trail.style.animationDuration = `${duration}s`;
+                    trail.style.animationDelay = `${delay + i * 0.02}s`; // 依次延迟出现
+                    
+                    starsContainer.appendChild(trail);
+                }
+                
+                starsContainer.appendChild(star);
+                
+                // 动画结束后移除元素并创建新的流星
+                setTimeout(() => {
+                    // 移除主粒子和所有拖尾粒子
+                    star.remove();
+                    // 获取所有拖尾粒子并移除它们
+                    const trails = starsContainer.querySelectorAll('.star');
+                    for (let i = 0; i < Math.min(trailLength, trails.length); i++) {
+                        if (trails[i]) trails[i].remove();
+                    }
+                    // 重新创建新的流星
+                    createStar();
+                }, duration * 1000);
+            }
         });
     </script>
 </body>
