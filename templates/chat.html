@@ -10,6 +10,9 @@
     <!-- 流星粒子容器 -->
     <div class="stars-container" id="stars-container"></div>
     
+    <!-- 鼠标指针粒子容器 -->
+    <div class="cursor-particles" id="cursor-particles"></div>
+    
     <div class="container">
         <h1>新闻对话</h1>
         
@@ -253,8 +256,6 @@
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder('utf-8');
                         let accumulatedText = '';
-                        
-                        let accumulatedText = '';
                         let buffer = ''; // 用于累积不完整的数据
                         
                         while (true) {
@@ -370,8 +371,6 @@
                         
                         const reader = response.body.getReader();
                         const decoder = new TextDecoder('utf-8');
-                        let accumulatedText = '';
-                        
                         let accumulatedText = '';
                         let buffer = ''; // 用于累积不完整的数据
                         
@@ -508,6 +507,72 @@
                     createStar();
                 }, duration * 1000);
             }
+        });
+        
+        // 鼠标指针环绕粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const cursorParticles = document.getElementById('cursor-particles');
+            const particleCount = 12; // 环绕粒子数量
+            let mouseX = 0;
+            let mouseY = 0;
+            let particles = [];
+            
+            // 创建环绕粒子
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('cursor-particle');
+                
+                // 粒子尺寸 (3-5px)
+                const size = Math.random() * 2 + 3;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // 添加淡蓝色发光效果
+                particle.style.backgroundColor = '#87CEEB'; // 淡蓝色
+                particle.style.boxShadow = `0 0 ${size/2}px #87CEEB, 0 0 ${size}px #87CEEB`;
+                
+                // 初始透明度
+                particle.style.opacity = Math.random() * 0.5 + 0.3;
+                
+                cursorParticles.appendChild(particle);
+                particles.push({
+                    element: particle,
+                    angle: (i / particleCount) * Math.PI * 2, // 初始角度
+                    distance: Math.random() * 20 + 20, // 距离鼠标指针的距离
+                    speed: Math.random() * 0.05 + 0.02, // 旋转速度
+                    size: size
+                });
+            }
+            
+            // 监听鼠标移动
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            
+            // 粒子动画循环
+            function animateParticles() {
+                particles.forEach(particle => {
+                    // 更新角度
+                    particle.angle += particle.speed;
+                    
+                    // 计算新位置
+                    const x = mouseX + Math.cos(particle.angle) * particle.distance;
+                    const y = mouseY + Math.sin(particle.angle) * particle.distance;
+                    
+                    // 应用新位置
+                    particle.element.style.left = `${x}px`;
+                    particle.element.style.top = `${y}px`;
+                    
+                    // 随机改变透明度产生闪烁效果
+                    particle.element.style.opacity = Math.random() * 0.5 + 0.3;
+                });
+                
+                requestAnimationFrame(animateParticles);
+            }
+            
+            // 启动动画
+            animateParticles();
         });
     </script>
 </body>
