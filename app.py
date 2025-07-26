@@ -104,12 +104,12 @@ def chat_stream():
 
         # 更宽松的输入验证 - 只有当输入为 None 时才报错
         if user_input is None:
-            yield "错误：请输入一个主题或问题。"
+            yield "{\"type\": \"output\", \"content\": \"错误：请输入一个主题或问题。\"}\n"
             return
             
         # 如果输入是空字符串，也认为是无效输入
         if not user_input.strip():
-            yield "错误：请输入一个主题或问题。"
+            yield "{\"type\": \"output\", \"content\": \"错误：请输入一个主题或问题。\"}\n"
             return
 
         # 从 session 中获取历史记录
@@ -132,6 +132,7 @@ def chat_stream():
             # 使用 asyncio.run 来处理异步代码（推荐方法）
             import asyncio
             import concurrent.futures
+            import json
             
             def run_async_code():
                 async def handle_stream():
@@ -139,7 +140,9 @@ def chat_stream():
                     async for chunk in agent.generate_newsletter_stream(user_input):
                         # 发送每个块到客户端
                         yield chunk
-                        full_response += chunk
+                        # 只累积output类型的内容
+                        if chunk.get("type") == "output":
+                            full_response += chunk.get("content", "")
                 
                 async def collect_chunks():
                     chunks = []
@@ -155,9 +158,9 @@ def chat_stream():
                 future = executor.submit(run_async_code)
                 chunks = future.result()
                 
-                # 逐个发送块
+                # 逐个发送块，以JSON格式
                 for chunk in chunks:
-                    yield chunk
+                    yield json.dumps(chunk, ensure_ascii=False) + "\n"
                     
             # 更新历史记录
             chat_history_raw.append({'type': 'human', 'content': user_input})
@@ -166,10 +169,10 @@ def chat_stream():
 
         except ValueError as e:
             print(f"配置错误: {e}")
-            yield f"错误: {e}"
+            yield "{\"type\": \"output\", \"content\": \"" + f"错误: {e}".replace('"', '\\"') + "\"}\n"
         except Exception as e:
             print(f"生成内容时出错: {e}")
-            yield f"生成内容时发生错误: {e}"
+            yield "{\"type\": \"output\", \"content\": \"" + f"生成内容时发生错误: {e}".replace('"', '\\"') + "\"}\n"
 
     # 使用Flask的stream_with_context包装生成器
     return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')

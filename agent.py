@@ -200,7 +200,7 @@ class NewsletterAgent:
                 "input": topic,
                 "chat_history": self.chat_history
             }):
-                # 只返回最终输出的流，忽略中间步骤
+                # 返回最终输出的流以及中间步骤信息
                 if "output" in chunk:
                     # 累积响应内容
                     output = chunk["output"]
@@ -210,7 +210,7 @@ class NewsletterAgent:
                     if "agent stopped due to max iterations" in output.lower():
                         # 当达到最大迭代次数时，给出总结性信息
                         summary_msg = "\n\n[已达到最大迭代次数限制，正在为您总结当前已获取的信息...]\n"
-                        yield summary_msg
+                        yield {"type": "output", "content": summary_msg}
                         
                         # 收集到目前为止的所有输出内容
                         # 如果已经有内容，则进行总结；否则提供一般性说明
@@ -231,26 +231,35 @@ class NewsletterAgent:
                             # 流式输出总结内容
                             summary_content = summary_response.content
                             for i in range(0, len(summary_content), 10):
-                                yield summary_content[i:i+10]
+                                yield {"type": "output", "content": summary_content[i:i+10]}
                                 # 添加一个小延迟以模拟流式效果
                                 await asyncio.sleep(0.01)
                         except Exception as summary_error:
                             # 如果总结过程也出错，则提供一个简单的错误信息
                             error_msg = f"\n\n[抱歉，在总结信息时遇到问题: {summary_error}]"
-                            yield error_msg
+                            yield {"type": "output", "content": error_msg}
                     else:
-                        yield output
+                        yield {"type": "output", "content": output}
                 elif "actions" in chunk:
-                    # 这里可以处理工具调用的流式输出（如果需要显示工具调用过程）
-                    # 暂时我们只关注最终输出
-                    pass
+                    # 处理工具调用的流式输出，显示正在执行的操作
+                    actions = chunk.get("actions", [])
+                    for action in actions:
+                        tool_name = action.tool
+                        tool_input = action.tool_input
+                        status_msg = f"[正在调用工具: {tool_name}]"
+                        yield {"type": "status", "content": status_msg}
                 elif "steps" in chunk:
-                    # 这里可以处理中间步骤的流式输出（如果需要显示推理过程）
-                    # 暂时我们只关注最终输出
-                    pass
+                    # 处理中间步骤的流式输出，显示推理过程
+                    steps = chunk.get("steps", [])
+                    for step in steps:
+                        if hasattr(step, 'action') and hasattr(step.action, 'tool'):
+                            tool_name = step.action.tool
+                            status_msg = f"[正在执行: {tool_name}]"
+                            yield {"type": "status", "content": status_msg}
         except Exception as e:
             # 处理其他异常
             print(f"捕获到异常: {type(e).__name__}: {e}")
+            yield {"type": "output", "content": f"\n\n[发生错误: {str(e)}]"}
             raise
 
 # 主程序入口（用于测试对话记忆功能）

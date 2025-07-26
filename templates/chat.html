@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <!-- 流星粒子容器 -->
+    <div class="stars-container" id="stars-container"></div>
+    
     <div class="container">
         <h1>新闻对话</h1>
         
@@ -86,6 +89,51 @@
     </div>
 
     <script>
+        // 创建流星粒子效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const starsContainer = document.getElementById('stars-container');
+            const starCount = 100; // 流星数量
+            
+            // 创建流星粒子
+            for (let i = 0; i < starCount; i++) {
+                createStar();
+            }
+            
+            function createStar() {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // 随机大小 (1-3px)
+                const size = Math.random() * 2 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                
+                // 随机位置 (页面顶部和左侧一定范围内)
+                const startX = Math.random() * window.innerWidth * 1.5;
+                const startY = Math.random() * -window.innerHeight * 0.5;
+                star.style.left = `${startX}px`;
+                star.style.top = `${startY}px`;
+                
+                // 随机透明度
+                star.style.opacity = Math.random() * 0.8 + 0.2;
+                
+                // 随机动画持续时间 (2-5秒)
+                const duration = Math.random() * 3 + 2;
+                star.style.animationDuration = `${duration}s`;
+                
+                // 随机动画延迟
+                const delay = Math.random() * 5;
+                star.style.animationDelay = `${delay}s`;
+                
+                starsContainer.appendChild(star);
+                
+                // 动画结束后移除元素并创建新的流星
+                setTimeout(() => {
+                    star.remove();
+                    createStar();
+                }, duration * 1000);
+            }
+        });
         document.addEventListener('DOMContentLoaded', function() {
             const modelForm = document.getElementById('model-form');
             const chatForm = document.getElementById('chat-form');
@@ -169,10 +217,11 @@
                     // 创建AI消息容器
                     const aiMessageDiv = document.createElement('div');
                     aiMessageDiv.className = 'chat-message ai-message';
-                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
+                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div><div class="status-indicator" id="status-indicator" style="display: none;"></div>';
                     chatWindow.appendChild(aiMessageDiv);
                     
                     const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                    const statusIndicator = aiMessageDiv.querySelector('#status-indicator');
                     
                     // 滚动到底部
                     chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -210,10 +259,25 @@
                             if (done) break;
                             
                             const chunk = decoder.decode(value, { stream: true });
-                            accumulatedText += chunk;
-                            
-                            // 更新AI响应
-                            aiResponseDiv.textContent = accumulatedText;
+                            // 解析JSON格式的消息
+                            try {
+                                const message = JSON.parse(chunk);
+                                if (message.type === "status") {
+                                    // 显示状态消息
+                                    statusIndicator.textContent = message.content;
+                                    statusIndicator.style.display = "block";
+                                } else if (message.type === "output") {
+                                    // 隐藏状态消息
+                                    statusIndicator.style.display = "none";
+                                    // 更新AI响应
+                                    accumulatedText += message.content;
+                                    aiResponseDiv.textContent = accumulatedText;
+                                }
+                            } catch (e) {
+                                // 如果不是JSON格式，按原来的方式处理
+                                accumulatedText += chunk;
+                                aiResponseDiv.textContent = accumulatedText;
+                            }
                             
                             // 滚动到底部
                             chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -261,10 +325,11 @@
                     // 创建AI消息容器
                     const aiMessageDiv = document.createElement('div');
                     aiMessageDiv.className = 'chat-message ai-message';
-                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div>';
+                    aiMessageDiv.innerHTML = '<p><strong>AI助手:</strong></p><div id="ai-response"></div><div class="status-indicator" id="status-indicator" style="display: none;"></div>';
                     chatWindow.appendChild(aiMessageDiv);
                     
                     const aiResponseDiv = aiMessageDiv.querySelector('#ai-response');
+                    const statusIndicator = aiMessageDiv.querySelector('#status-indicator');
                     
                     // 滚动到底部
                     chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -298,14 +363,31 @@
                             const { done, value } = await reader.read();
                             if (done) {
                                 console.log('流式响应结束');
+                                // 隐藏状态指示器
+                                statusIndicator.style.display = "none";
                                 break;
                             }
                             
                             const chunk = decoder.decode(value, { stream: true });
-                            accumulatedText += chunk;
-                            
-                            // 更新AI响应
-                            aiResponseDiv.textContent = accumulatedText;
+                            // 解析JSON格式的消息
+                            try {
+                                const message = JSON.parse(chunk);
+                                if (message.type === "status") {
+                                    // 显示状态消息
+                                    statusIndicator.textContent = message.content;
+                                    statusIndicator.style.display = "block";
+                                } else if (message.type === "output") {
+                                    // 隐藏状态消息
+                                    statusIndicator.style.display = "none";
+                                    // 更新AI响应
+                                    accumulatedText += message.content;
+                                    aiResponseDiv.textContent = accumulatedText;
+                                }
+                            } catch (e) {
+                                // 如果不是JSON格式，按原来的方式处理
+                                accumulatedText += chunk;
+                                aiResponseDiv.textContent = accumulatedText;
+                            }
                             
                             // 滚动到底部
                             chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -319,6 +401,7 @@
                     }
                 });
             }
+        });
         });
     </script>
 </body>
