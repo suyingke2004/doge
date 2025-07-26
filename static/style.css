@@ -174,7 +174,7 @@ button:hover {
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 8px;
-    background-color: rgba(249, 250, 251, 0.6); /* 增加透明度至0.6 */
+    background-color: rgba(249, 250, 251, 0.6);
 }
 
 .chat-message {
@@ -182,23 +182,30 @@ button:hover {
     margin-bottom: 15px;
     padding: 0;
     border-radius: 8px;
-    align-items: flex-start; /* 垂直对齐到顶部 */
 }
 
 .user-message {
     justify-content: flex-end;
-    flex-direction: row-reverse; /* 反转方向，让头像在右侧 */
 }
 
 .ai-message {
     justify-content: flex-start;
 }
 
+.message-wrapper {
+    display: flex;
+    align-items: flex-start;
+    max-width: 85%;
+}
+
+.user-message .message-wrapper {
+    flex-direction: row-reverse;
+}
+
 .message-content {
-    max-width: 80%;
     padding: 10px 15px;
     border-radius: 12px;
-    margin: 0;
+    margin: 0 10px;
 }
 
 .user-message .message-content {
@@ -219,8 +226,7 @@ button:hover {
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
-    margin: 0 10px;
-    flex-shrink: 0; /* 防止头像被压缩 */
+    flex-shrink: 0;
 }
 
 .ai-message p {
