@@ -3,3 +3,11 @@ trash/
 __pycache__/
 *.pyc
 tests/__pycache__/
+GEMINI.md
+target.md
+QWEN.md
+CODE_STYLE_GUIDE.md
+*.log
+debug_*.py
+templates/debug_*.html
+tests/debug_*.py
