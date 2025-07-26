@@ -110,12 +110,12 @@ def chat_stream():
 
         # 更宽松的输入验证 - 只有当输入为 None 时才报错
         if user_input is None:
-            yield "{\"type\": \"output\", \"content\": \"错误：请输入一个主题或问题。\"}\n"
+            yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
             return
             
         # 如果输入是空字符串，也认为是无效输入
         if not user_input.strip():
-            yield "{\"type\": \"output\", \"content\": \"错误：请输入一个主题或问题。\"}\n"
+            yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
             return
 
         # 从 session 中获取历史记录
@@ -137,36 +137,69 @@ def chat_stream():
             
             # 使用 asyncio.run 来处理异步代码（推荐方法）
             import asyncio
-            import concurrent.futures
             import json
             
-            def run_async_code():
-                async def handle_stream():
-                    nonlocal full_response
-                    async for chunk in agent.generate_newsletter_stream(user_input):
-                        # 发送每个块到客户端
-                        yield chunk
-                        # 只累积output类型的内容
-                        if chunk.get("type") == "output":
-                            full_response += chunk.get("content", "")
-                
-                async def collect_chunks():
-                    chunks = []
-                    async for chunk in handle_stream():
-                        chunks.append(chunk)
-                    return chunks
-                
-                # 在新事件循环中运行异步代码
-                return asyncio.run(collect_chunks())
-            
-            # 在线程中运行异步代码
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(run_async_code)
-                chunks = future.result()
-                
-                # 逐个发送块，以JSON格式
-                for chunk in chunks:
+            # 定义一个异步生成器函数
+            async def async_generate():
+                nonlocal full_response
+                async for chunk in agent.generate_newsletter_stream(user_input):
+                    # 累积响应内容
+                    if chunk.get("type") == "output":
+                        full_response += chunk.get("content", "")
+                    # 立即发送每个块到客户端
                     yield json.dumps(chunk, ensure_ascii=False) + "\n"
+            
+            # 在新事件循环中运行异步代码
+            async def run_async_code():
+                async for item in async_generate():
+                    yield item
+                    
+            # 同步包装异步生成器
+            import threading
+            from queue import Queue, Empty
+            
+            # 创建队列用于传递数据
+            q = Queue()
+            
+            # 定义在后台线程中运行的函数
+            def run_async_generator():
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    async_gen = run_async_code()
+                    while True:
+                        try:
+                            item = loop.run_until_complete(async_gen.__anext__())
+                            q.put(item)
+                        except StopAsyncIteration:
+                            break
+                except Exception as e:
+                    q.put(e)
+                finally:
+                    q.put(None)  # 信号表示完成
+                    loop.close()
+            
+            # 启动后台线程
+            thread = threading.Thread(target=run_async_generator)
+            thread.start()
+            
+            # 从队列中获取数据并发送给客户端
+            while True:
+                try:
+                    item = q.get(timeout=1)  # 1秒超时
+                    if item is None:  # 完成信号
+                        break
+                    if isinstance(item, Exception):
+                        raise item
+                    yield item
+                except Empty:
+                    # 检查线程是否还活着
+                    if not thread.is_alive():
+                        break
+                    continue
+            
+            # 等待线程完成
+            thread.join()
                     
             # 更新历史记录
             chat_history_raw.append({'type': 'human', 'content': user_input})
