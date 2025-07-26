@@ -46,13 +46,13 @@ class NewsletterAgent:
     一个能够研究主题并生成新闻通讯的AI代理。
     现在支持对话记忆和流式输出。
     """
-    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None, max_iterations: int = 5):
+    def __init__(self, model_provider: str = "deepseek", model_name: str = None, chat_history: list = None, max_iterations: int = 128):
         """
         初始化代理。
         :param model_provider: 要使用的语言模型提供商。
         :param model_name: 要使用的具体模型名称，如果未提供则使用默认模型。
         :param chat_history: 一个包含对话历史的列表。
-        :param max_iterations: 代理执行的最大迭代次数。
+        :param max_iterations: 代理执行的最大迭代次数，默认为128次。
         """
         self.model_provider = model_provider
         self.model_name = model_name

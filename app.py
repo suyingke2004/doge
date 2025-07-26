@@ -5,12 +5,28 @@ import markdown
 import os
 import asyncio
 import json
+import sys
 
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
 # 设置一个密钥，以便使用 session
 # 在生产环境中，应使用更安全的方式管理密钥，例如环境变量
 app.secret_key = os.urandom(24)
+
+# 处理打包后的资源路径
+def resource_path(relative_path):
+    """获取资源的绝对路径，用于PyInstaller打包后的资源访问"""
+    try:
+        # PyInstaller创建临时文件夹并存储路径到 _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
+
+# 配置模板和静态文件路径
+app.template_folder = resource_path('templates')
+app.static_folder = resource_path('static')
 
 # 2. 定义主页路由（重定向到流式端点）
 @app.route('/')
@@ -95,10 +111,8 @@ def chat_stream():
             model_name = request.form.get('model_name', '').strip()
             # 如果没有提供模型名称，则使用空字符串表示使用默认模型
             model_name = model_name if model_name else None
-            # 获取 maxiter 参数，默认为 5
-            maxiter = int(request.form.get('maxiter', 5))
-            # 限制 maxiter 在 1-10 范围内
-            maxiter = max(1, min(10, maxiter))
+            # 获取 maxiter 参数，默认为 128
+            maxiter = int(request.form.get('maxiter', 128))
             
             session['model_provider'] = model_provider
             session['model_name'] = model_name
@@ -106,7 +120,7 @@ def chat_stream():
         else:
             model_provider = session.get('model_provider', 'deepseek')
             model_name = session.get('model_name', None)
-            maxiter = session.get('maxiter', 5)
+            maxiter = session.get('maxiter', 128)
 
         # 更宽松的输入验证 - 只有当输入为 None 时才报错
         if user_input is None:

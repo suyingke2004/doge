@@ -107,7 +107,7 @@ The application will be available at `http://localhost:5001`.
 2. **Select Model**:
    - Choose AI model provider (e.g., DeepSeek, OpenAI, etc.)
    - Select specific model (e.g., gpt-4o, deepseek-chat, etc.)
-   - Set maximum iterations (1-10, default is 5)
+   - Set maximum iterations (default is 128)
 
 3. **Enter Topic**:
    Enter your interested news topic in the input box, such as "latest developments in artificial intelligence".
