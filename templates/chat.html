@@ -400,28 +400,31 @@
                                 if (line.trim() === '') continue; // 跳过空行
                                 
                                 // 解析JSON格式的消息
-                                try {
-                                    const message = JSON.parse(line);
-                                    console.log('Received message:', message); // 调试信息
-                                    if (message.type === "status") {
-                                        // 显示状态消息
-                                        statusIndicator.textContent = message.content;
-                                        statusIndicator.style.display = "block";
-                                        console.log('Showing status:', message.content); // 调试信息
-                                    } else if (message.type === "output") {
-                                        // 隐藏状态消息
-                                        statusIndicator.style.display = "none";
-                                        // 更新AI响应
-                                        accumulatedText += message.content;
+                                    try {
+                                        const message = JSON.parse(line);
+                                        console.log('Received message:', message); // 调试信息
+                                        if (message.type === "status") {
+                                            // 显示状态消息
+                                            console.log('Setting status text to:', message.content); // 调试信息
+                                            statusIndicator.textContent = message.content;
+                                            console.log('Setting status display to block'); // 调试信息
+                                            statusIndicator.style.display = "block";
+                                            console.log('Showing status:', message.content); // 调试信息
+                                        } else if (message.type === "output") {
+                                            // 隐藏状态消息
+                                            console.log('Setting status display to none for output'); // 调试信息
+                                            statusIndicator.style.display = "none";
+                                            // 更新AI响应
+                                            accumulatedText += message.content;
+                                            aiResponseDiv.textContent = accumulatedText;
+                                            console.log('Output received, hiding status'); // 调试信息
+                                        }
+                                    } catch (e) {
+                                        // 如果不是JSON格式，按原来的方式处理
+                                        console.log('Non-JSON message:', line); // 调试信息
+                                        accumulatedText += line;
                                         aiResponseDiv.textContent = accumulatedText;
-                                        console.log('Output received, hiding status'); // 调试信息
                                     }
-                                } catch (e) {
-                                    // 如果不是JSON格式，按原来的方式处理
-                                    console.log('Non-JSON message:', line); // 调试信息
-                                    accumulatedText += line;
-                                    aiResponseDiv.textContent = accumulatedText;
-                                }
                             }
                             
                             // 滚动到底部
