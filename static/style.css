@@ -238,4 +238,5 @@ button:hover {
     font-style: italic;
     color: #6c757d;
     display: inline-block;
+    border: 2px solid #007bff; /* 添加边框以便调试 */
 }
