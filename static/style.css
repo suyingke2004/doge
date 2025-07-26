@@ -134,7 +134,7 @@ input[type="text"]:focus {
 /* 可扩展文本区域样式 */
 .expanding-textarea {
     width: 100%;
-    min-height: 60px;
+    min-height: 80px;
     max-height: 200px;
     padding: 12px;
     font-size: 1em;
@@ -193,7 +193,7 @@ button:hover {
 /* 聊天窗口样式 */
 /* 聊天消息样式 */
 .chat-window {
-    height: 400px;
+    height: 500px;
     overflow-y: auto;
     border: 1px solid #eef2f5;
     padding: 15px;
