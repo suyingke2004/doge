@@ -56,6 +56,12 @@ def simple_test():
     """简化测试页面"""
     return render_template('simple_test.html')
 
+# 3.7 定义状态指示器调试路由
+@app.route('/debug_status')
+def debug_status():
+    """状态指示器调试页面"""
+    return render_template('debug_status.html')
+
 # 4. 定义流式生成路由，处理所有对话
 @app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
