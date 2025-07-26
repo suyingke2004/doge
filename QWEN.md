@@ -91,6 +91,16 @@ Changes made:
 2. Updated `templates/chat.html` to truncate history titles to 30 characters with ellipsis
 3. Updated `templates/history.html` to limit displayed content and maintain consistent item heights
 
+### Language Toggle Fix (July 26, 2025)
+
+Fixed an issue where the language toggle button was not responding to clicks. The fix involved adding the missing JavaScript event listener and functionality to switch between Chinese and English.
+
+Changes made:
+1. Added JavaScript code to handle language toggle button clicks in `templates/chat.html`
+2. Implemented logic to switch between Chinese and English with appropriate UI updates
+3. Updated page title and all other UI elements (history sidebar title, model sidebar title, form labels, etc.) to reflect the selected language
+4. Added comprehensive translation mapping for all visible text elements
+
 ### History Record Background Enhancement (July 26, 2025)
 
 Enhanced the visual distinction between history records by adding semi-transparent light blue backgrounds that don't overly obscure the background image.

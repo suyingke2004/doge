@@ -241,6 +241,81 @@
             // 其他脚本（如粒子效果、语言切换等）保持不变
         });
 
+        // 语言切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const langToggleBtn = document.getElementById('lang-toggle');
+            const languageInput = document.getElementById('language-input');
+            const pageTitle = document.getElementById('page-title');
+            const historySidebarTitle = document.querySelector('.history-sidebar h3');
+            const modelSidebarTitle = document.querySelector('.model-selection-sidebar p');
+            const modelProviderLabel = document.getElementById('model-provider-label');
+            const modelNameLabel = document.getElementById('model-name-label');
+            const maxiterLabel = document.getElementById('maxiter-label');
+            const chatInputPlaceholder = document.getElementById('chat-topic-input');
+            const chatSubmitBtn = document.getElementById('chat-submit-btn');
+            const newChatLink = document.querySelector('.back-link');
+            
+            // 中英文文本映射
+            const translations = {
+                'zh': {
+                    'page-title': '新闻对话',
+                    'history-title': '聊天历史',
+                    'model-title': '模型与参数',
+                    'model-provider': '模型提供商',
+                    'model-name': '模型',
+                    'maxiter': '最大迭代次数',
+                    'input-placeholder': '输入您的问题...',
+                    'submit-btn': '发送',
+                    'new-chat': '开始新对话'
+                },
+                'en': {
+                    'page-title': 'News Chat',
+                    'history-title': 'Chat History',
+                    'model-title': 'Model & Parameters',
+                    'model-provider': 'Model Provider',
+                    'model-name': 'Model',
+                    'maxiter': 'Max Iterations',
+                    'input-placeholder': 'Enter your question...',
+                    'submit-btn': 'Send',
+                    'new-chat': 'Start New Chat'
+                }
+            };
+            
+            if (langToggleBtn && languageInput) {
+                // 设置按钮初始文本
+                langToggleBtn.textContent = languageInput.value === 'zh' ? 'English' : '中文';
+                
+                // 更新所有文本元素
+                function updateTexts(lang) {
+                    const t = translations[lang];
+                    pageTitle.textContent = t['page-title'];
+                    if (historySidebarTitle) historySidebarTitle.textContent = t['history-title'];
+                    if (modelSidebarTitle) modelSidebarTitle.textContent = t['model-title'];
+                    if (modelProviderLabel) modelProviderLabel.textContent = t['model-provider'];
+                    if (modelNameLabel) modelNameLabel.textContent = t['model-name'];
+                    if (maxiterLabel) maxiterLabel.textContent = t['maxiter'];
+                    if (chatInputPlaceholder) chatInputPlaceholder.placeholder = t['input-placeholder'];
+                    if (chatSubmitBtn) chatSubmitBtn.textContent = t['submit-btn'];
+                    if (newChatLink) newChatLink.textContent = t['new-chat'];
+                }
+                
+                // 初始化文本
+                updateTexts(languageInput.value);
+                
+                // 添加点击事件监听器
+                langToggleBtn.addEventListener('click', function() {
+                    if (languageInput.value === 'zh') {
+                        languageInput.value = 'en';
+                        langToggleBtn.textContent = '中文';
+                    } else {
+                        languageInput.value = 'zh';
+                        langToggleBtn.textContent = 'English';
+                    }
+                    updateTexts(languageInput.value);
+                });
+            }
+        });
+
         // 加载聊天历史记录
         document.addEventListener('DOMContentLoaded', function() {
             fetch('/history')
