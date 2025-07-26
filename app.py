@@ -169,10 +169,10 @@ def chat_stream():
 
         except ValueError as e:
             print(f"配置错误: {e}")
-            yield "{\"type\": \"output\", \"content\": \"" + f"错误: {e}".replace('"', '\\"') + "\"}\n"
+            yield json.dumps({"type": "output", "content": f"错误: {e}"}, ensure_ascii=False) + "\n"
         except Exception as e:
             print(f"生成内容时出错: {e}")
-            yield "{\"type\": \"output\", \"content\": \"" + f"生成内容时发生错误: {e}".replace('"', '\\"') + "\"}\n"
+            yield json.dumps({"type": "output", "content": f"生成内容时发生错误: {e}"}, ensure_ascii=False) + "\n"
 
     # 使用Flask的stream_with_context包装生成器
     return Response(stream_with_context(generate()), content_type='text/plain; charset=utf-8')
