@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新闻对话</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- 引入marked.js用于Markdown到HTML的转换 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <!-- 流星粒子容器 -->
@@ -220,7 +222,8 @@
                                 } else if (message.type === "output") {
                                     statusIndicator.style.display = "none";
                                     accumulatedText += message.content;
-                                    aiResponseDiv.innerHTML = accumulatedText; // Use innerHTML to render potential HTML tags
+                                    // 使用marked库将Markdown转换为HTML
+                                    aiResponseDiv.innerHTML = marked.parse(accumulatedText);
                                 }
                             } catch (e) {
                                 accumulatedText += line;
@@ -257,7 +260,9 @@
                         const listItem = document.createElement('li');
                         const link = document.createElement('a');
                         link.href = `/history/${item.id}`;
-                        link.textContent = item.title;
+                        // 截取标题的前30个字符，如果超过则添加省略号
+                        const title = item.title.length > 30 ? item.title.substring(0, 30) + '...' : item.title;
+                        link.textContent = title;
                         listItem.appendChild(link);
                         historyList.appendChild(listItem);
                     });

@@ -80,6 +80,56 @@ The Flask app provides a simple web interface with the following key routes:
 *   Write tests for core functionalities, especially for tools and agent logic.
 *   Since you cannot interact with a browser directly, do not use manual browser testing. Instead, use headless browser testing or write more comprehensive integration tests.
 
+## Bug Fixes
+
+### History Sidebar Display Issue (July 26, 2025)
+
+Fixed an issue where history records in the sidebar had inconsistent heights and displayed full content without truncation. The fix involved modifying CSS styles and JavaScript logic to ensure uniform display.
+
+Changes made:
+1. Modified `static/style.css` to set a fixed height for history items in the sidebar and added text truncation
+2. Updated `templates/chat.html` to truncate history titles to 30 characters with ellipsis
+3. Updated `templates/history.html` to limit displayed content and maintain consistent item heights
+
+### History Record Background Enhancement (July 26, 2025)
+
+Enhanced the visual distinction between history records by adding semi-transparent light blue backgrounds that don't overly obscure the background image.
+
+Changes made:
+1. Changed background color of history items from white to light blue (rgba(173, 216, 230, 0.3)) in both `static/style.css` (for chat sidebar) and `templates/history.html` (for history page)
+2. Increased border radius from 4px to 10px for a more rounded appearance
+3. Updated hover effects to use light blue as well
+4. Maintained consistency with the overall design aesthetic
+
+### PDF Download Link Issue (July 26, 2025)
+
+Fixed an issue where PDF download links were displayed as plain text and required a page refresh to become clickable. The fix involved simplifying the HTML link generation in `agent.py` to remove unnecessary JavaScript event handlers, making the links immediately functional.
+
+Changes made:
+1. Modified the PDF link handling code in `agent.py` to generate clean HTML anchor tags
+2. Removed complex JavaScript onclick handlers that were causing the refresh requirement
+3. Ensured the frontend properly renders HTML content using `innerHTML`
+
+## Bug Fixes
+
+### PDF Download Link Issue (July 26, 2025)
+
+Fixed an issue where PDF download links were displayed as plain text and required a page refresh to become clickable. The fix involved simplifying the HTML link generation in `agent.py` to remove unnecessary JavaScript event handlers, making the links immediately functional.
+
+Changes made:
+1. Modified the PDF link handling code in `agent.py` to generate clean HTML anchor tags
+2. Removed complex JavaScript onclick handlers that were causing the refresh requirement
+3. Ensured the frontend properly renders HTML content using `innerHTML`
+
+### PDF Link Rendering Issue (July 26, 2025)
+
+Fixed an issue where PDF download links in Markdown format were not properly rendered as HTML links during streaming responses. The problem occurred because the streaming response directly used `innerHTML` without converting Markdown to HTML, while the page refresh process correctly converted Markdown to HTML.
+
+Changes made:
+1. Added the `marked` library to the chat template for Markdown to HTML conversion
+2. Modified the JavaScript in `chat.html` to convert Markdown to HTML during streaming responses
+3. Ensured consistent link rendering behavior between streaming and page refresh scenarios
+
 ## Future Development
 
 Refer to `plan.md` for a detailed roadmap of future features and improvements. Key areas for expansion include integrating more data sources (Reddit, RSS), enhancing the UI/UX, implementing content delivery systems (email, PDF), adding personalization, optimizing performance, and improving test coverage.

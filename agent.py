@@ -281,37 +281,21 @@ Remember, your goal is to become an intelligent assistant for users to obtain in
                     output = chunk["output"]
                     full_response += output
                     
-                    # 检查是否是最大迭代次数的消息
-                    # 检查是否是PDF导出工具的输出
+                    # 检查并转换PDF链接
                     if "PDF文件已生成，下载链接:" in output:
                         try:
                             # 提取URL
                             url = output.split("下载链接:")[-1].strip()
-                            # 生成带onclick事件的HTML链接
-                            link_html = f'''
-                            <a href="{url}" 
-                               target="_blank" 
-                               class="pdf-download-link"
-                               onclick="(function(e){{
-                                   e.preventDefault();
-                                   var newWindow = window.open(e.target.href, '_blank');
-                                   if (newWindow) {{
-                                       var timer = setInterval(function() {{ 
-                                           if(newWindow.closed) {{
-                                               clearInterval(timer);
-                                           }}
-                                       }}, 500);
-                                   }}
-                                   return false;
-                               }})(event)">
-                                下载PDF文件
-                            </a>
-                            '''
-                            yield {"type": "output", "content": link_html}
-                            full_response += link_html # 将HTML链接添加到完整响应中
-                        except Exception as e:
-                            yield {"type": "output", "content": f"处理PDF链接时出错: {e}"}
-                    elif "agent stopped due to max iterations" in output.lower():
+                            # 生成HTML链接
+                            link_html = f'<a href="{url}" target="_blank" class="pdf-download-link">下载PDF文件</a>'
+                            # 用HTML链接替换原始文本
+                            output = output.replace(f"PDF文件已生成，下载链接: {url}", link_html)
+                        except Exception:
+                            # 如果处理链接出错，则按原样输出，避免崩溃
+                            pass
+
+                    # 检查是否是最大迭代次数的消息
+                    if "agent stopped due to max iterations" in output.lower():
                         # 当达到最大迭代次数时，给出总结性信息
                         summary_msg = "\n\n[已达到最大迭代次数限制，正在为您总结当前已获取的信息...]\n"
                         yield {"type": "output", "content": summary_msg}

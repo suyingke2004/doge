@@ -8,12 +8,13 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f5f5f5;
+            background: url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
         }
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.7);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -24,19 +25,30 @@
         }
         .history-item {
             border-bottom: 1px solid #eee;
-            padding: 15px 0;
+            padding: 10px;
+            height: 80px; /* 统一每条记录的高度 */
+            overflow: hidden; /* 隐藏超出部分 */
+            background-color: rgba(173, 216, 230, 0.3); /* 添加淡蓝色透明背景 */
+            border-radius: 10px; /* 增大圆角 */
+            margin-bottom: 10px;
         }
         .history-item:last-child {
             border-bottom: none;
+            margin-bottom: 0;
         }
         .user-input {
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .agent-response {
             color: #34495e;
-            white-space: pre-wrap;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .timestamp {
             color: #95a5a6;
@@ -94,11 +106,15 @@
                     
                     const userInput = document.createElement('div');
                     userInput.className = 'user-input';
-                    userInput.textContent = `用户: ${item.user_input}`;
+                    // 截取用户输入的前50个字符
+                    const userText = item.user_input.length > 50 ? item.user_input.substring(0, 50) + '...' : item.user_input;
+                    userInput.textContent = `用户: ${userText}`;
                     
                     const agentResponse = document.createElement('div');
                     agentResponse.className = 'agent-response';
-                    agentResponse.textContent = `AI: ${item.agent_response}`;
+                    // 截取AI响应的前100个字符
+                    const agentText = item.agent_response.length > 100 ? item.agent_response.substring(0, 100) + '...' : item.agent_response;
+                    agentResponse.textContent = `AI: ${agentText}`;
                     
                     const timestamp = document.createElement('div');
                     timestamp.className = 'timestamp';
