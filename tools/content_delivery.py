@@ -81,12 +81,47 @@ class ContentDeliveryTool:
             # 构建PDF文件的完整路径
             pdf_path = os.path.join(downloads_dir, unique_filename)
             
-            # 将Markdown转换为HTML
-            html_content = markdown.markdown(content)
+            # 将Markdown转换为HTML，并添加适当的meta标签以支持中文字符
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Newsletter</title>
+    <style>
+        body {{
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }}
+        h1 {{
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 10px;
+        }}
+        h2 {{
+            color: #666;
+            margin-top: 30px;
+        }}
+        p {{
+            margin-bottom: 15px;
+        }}
+    </style>
+</head>
+<body>
+    {markdown.markdown(content)}
+</body>
+</html>"""
+            
+            # 配置pdfkit选项以正确处理中文字符
+            options = {
+                'encoding': 'UTF-8',
+                'no-outline': None,
+                'enable-local-file-access': None
+            }
             
             # 使用pdfkit生成PDF
             # 注意：这需要系统中安装了wkhtmltopdf
-            pdfkit.from_string(html_content, pdf_path)
+            pdfkit.from_string(html_content, pdf_path, options=options)
             
             # 返回下载链接
             download_link = f"/download/{unique_filename}"
