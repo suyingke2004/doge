@@ -177,23 +177,58 @@ button:hover {
 }
 
 .chat-message {
-    padding: 10px 15px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    max-width: 80%;
+    display: flex;
+    margin-bottom: 15px;
+    padding: 0;
+    border-radius: 8px;
 }
 
 .user-message {
-    background-color: #007bff;
-    color: white;
-    margin-left: auto;
-    text-align: right;
+    justify-content: flex-end;
 }
 
 .ai-message {
+    justify-content: flex-start;
+}
+
+.user-message .message-content {
+    background-color: #007bff;
+    color: white;
+    border-top-right-radius: 0;
+}
+
+.ai-message .message-content {
     background-color: rgba(238, 242, 245, 0.9);
     color: #333;
-    margin-right: auto;
+    border-top-left-radius: 0;
+}
+
+/* 头像样式 */
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 10px;
+}
+
+.user-avatar {
+    order: 2;
+    margin-left: 10px;
+    margin-right: 0;
+}
+
+.ai-avatar {
+    order: 1;
+    margin-right: 10px;
+    margin-left: 0;
+}
+
+.message-content {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 12px;
+    margin: 0;
 }
 
 .ai-message p {
