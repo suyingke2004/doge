@@ -4,6 +4,51 @@
 
 The Newsletter Generation Agent is an intelligent AI assistant that automatically gathers relevant information and generates concise, engaging, and informative newsletters based on user-specified topics. It integrates multiple information sources, including news websites, Reddit discussions, and RSS feeds, to provide a comprehensive content overview.
 
+## Quick Start
+
+### 1. Environment Setup
+
+```bash
+# Create and activate conda environment
+conda create -n news_agent python=3.11
+conda activate news_agent
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Configure API Keys
+
+Copy `.env.example` to `.env` and fill in the appropriate API keys:
+
+```env
+# API Keys for different model providers
+OPENAI_API_KEY=your_openai_api_key_here
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+ZHIPU_API_KEY=your_zhipu_api_key_here
+ALI_API_KEY=your_ali_api_key_here
+MOONSHOT_API_KEY=your_moonshot_api_key_here
+
+# News API
+NEWS_API_KEY=your_newsapi_key_here
+
+# Reddit API
+REDDIT_CLIENT_ID=your_reddit_client_id
+REDDIT_CLIENT_SECRET=your_reddit_client_secret
+
+# SendGrid for email delivery
+SENDGRID_API_KEY=your_sendgrid_api_key
+FROM_EMAIL=your_sender_email@example.com
+```
+
+### 3. Start the Application
+
+```bash
+python app.py
+```
+
+The application will be available at `http://localhost:5001`.
+
 ## Core Features
 
 1. **Multi-source Information Gathering**:
@@ -51,83 +96,6 @@ The Newsletter Generation Agent is an intelligent AI assistant that automaticall
   - weasyprint (PDF export)
 - **Frontend**: HTML, CSS
 - **Markdown Parsing**: Markdown library
-
-## Project Structure
-
-```
-news_agent/
-├── agent.py                 # AI agent core logic
-├── app.py                   # Flask web application
-├── requirements.txt         # Python dependencies list
-├── .env.example             # Environment variables configuration example
-├── plan.md                  # Project development plan and progress
-├── QWEN.md                  # Project coding conventions and context
-├── DEVELOPER_STYLE_GUIDE.md # Developer style guide
-├── static/                  # Static resources (CSS, etc.)
-│   └── style.css
-├── templates/               # HTML templates
-│   ├── chat.html
-│   ├── debug_chat.html
-│   └── simple_test.html
-├── tools/                   # Tools module
-│   ├── __init__.py          # News API and article scraping tools
-│   ├── reddit_search.py     # Reddit search tool
-│   ├── rss_feed.py          # RSS feed tool
-│   ├── content_delivery.py  # Content delivery tools (email and PDF)
-│   └── pdf_export.py        # PDF export tool
-├── tests/                   # Test suite
-│   ├── test_tools.py
-│   ├── test_ui_routes.py
-│   ├── test_model_selection.py
-│   ├── test_streaming.py
-│   └── ...
-└── ...
-```
-
-## Quick Start
-
-### 1. Environment Setup
-
-```bash
-# Create and activate conda environment
-conda create -n news_agent python=3.11
-conda activate news_agent
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 2. Configure API Keys
-
-Copy `.env.example` to `.env` and fill in the appropriate API keys:
-
-```env
-# API Keys for different model providers
-OPENAI_API_KEY=your_openai_api_key_here
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-ZHIPU_API_KEY=your_zhipu_api_key_here
-ALI_API_KEY=your_ali_api_key_here
-MOONSHOT_API_KEY=your_moonshot_api_key_here
-
-# News API
-NEWS_API_KEY=your_newsapi_key_here
-
-# Reddit API
-REDDIT_CLIENT_ID=your_reddit_client_id
-REDDIT_CLIENT_SECRET=your_reddit_client_secret
-
-# SendGrid for email delivery
-SENDGRID_API_KEY=your_sendgrid_api_key
-FROM_EMAIL=your_sender_email@example.com
-```
-
-### 3. Start the Application
-
-```bash
-python app.py
-```
-
-The application will be available at `http://localhost:5001`.
 
 ## Usage Guide
 
