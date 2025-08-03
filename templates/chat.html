@@ -239,7 +239,121 @@
                 }
             });
 
-            // 其他脚本（如粒子效果、语言切换等）保持不变
+            });
+
+        // 粒子效果实现
+        document.addEventListener('DOMContentLoaded', function() {
+            // 流星粒子效果
+            const starsContainer = document.getElementById('stars-container');
+            
+            function createStar() {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // 增大流星尺寸 (2-4px)
+                const size = Math.random() * 2 + 2;
+                star.style.width = `${size}px`;
+                star.style.height = `${size * 3}px`; // 拉长高度
+                
+                // 随机位置 (顶部和右侧)
+                const startX = Math.random() * window.innerWidth;
+                const startY = -20; // 从顶部稍微上面开始
+                star.style.left = `${startX}px`;
+                star.style.top = `${startY}px`;
+                
+                // 缩短动画时长 (1-3秒)以增加密度
+                const duration = Math.random() * 2 + 1;
+                star.style.animationDuration = `${duration}s`;
+                
+                // 减少随机延迟以增加连续性
+                const delay = Math.random() * 2;
+                star.style.animationDelay = `${delay}s`;
+                
+                starsContainer.appendChild(star);
+                
+                // 动画结束后移除元素
+                setTimeout(() => {
+                    if (star.parentNode) {
+                        star.parentNode.removeChild(star);
+                    }
+                }, duration * 1000);
+            }
+            
+            // 创建初始流星
+            for (let i = 0; i < 30; i++) {
+                setTimeout(createStar, Math.random() * 2000);
+            }
+            
+            // 增加创建新流星的频率
+            setInterval(createStar, 150);
+            
+            // 鼠标指针粒子效果
+            const cursorParticles = document.getElementById('cursor-particles');
+            const particles = [];
+            const particleCount = 30; // 增加粒子数量
+            
+            // 创建粒子池
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('cursor-particle');
+                particle.style.width = '6px'; // 增大粒子尺寸
+                particle.style.height = '6px';
+                particle.style.opacity = '0';
+                // 改为淡蓝色
+                particle.style.backgroundColor = 'rgba(173, 216, 230, 0.7)';
+                cursorParticles.appendChild(particle);
+                particles.push({
+                    element: particle,
+                    x: 0,
+                    y: 0,
+                    angle: 0,
+                    speed: 0,
+                    size: Math.random() * 3 + 2, // 增大尺寸范围
+                    life: 0,
+                    active: false
+                });
+            }
+            
+            document.addEventListener('mousemove', function(e) {
+                // 激活多个未使用的粒子以增强效果
+                let activated = 0;
+                for (let i = 0; i < particles.length && activated < 3; i++) {
+                    if (!particles[i].active) {
+                        particles[i].active = true;
+                        particles[i].x = e.clientX;
+                        particles[i].y = e.clientY;
+                        particles[i].angle = Math.random() * Math.PI * 2;
+                        particles[i].speed = Math.random() * 3 + 1;
+                        particles[i].life = 40; // 增加生命周期
+                        particles[i].element.style.width = `${particles[i].size}px`;
+                        particles[i].element.style.height = `${particles[i].size}px`;
+                        activated++;
+                    }
+                }
+            });
+            
+            // 粒子动画循环
+            function animateParticles() {
+                for (let i = 0; i < particles.length; i++) {
+                    if (particles[i].active) {
+                        particles[i].x += Math.cos(particles[i].angle) * particles[i].speed;
+                        particles[i].y += Math.sin(particles[i].angle) * particles[i].speed;
+                        particles[i].life--;
+                        
+                        particles[i].element.style.left = `${particles[i].x}px`;
+                        particles[i].element.style.top = `${particles[i].y}px`;
+                        particles[i].element.style.opacity = `${particles[i].life / 40}`; // 调整透明度计算
+                        
+                        if (particles[i].life <= 0) {
+                            particles[i].active = false;
+                            particles[i].element.style.opacity = '0';
+                        }
+                    }
+                }
+                requestAnimationFrame(animateParticles);
+            }
+            
+            animateParticles();
         });
 
         // 语言切换功能
