@@ -1,0 +1,184 @@
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain.agents import AgentExecutor, create_openai_tools_agent
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import AIMessage, HumanMessage
+
+# from tools.reddit_search import reddit_search_tool
+from tools.emotion_recognition import emotion_recognition_tool
+from tools.emotional_resonance import get_emotional_resonance
+from tools.news_website_search import search_news_websites
+
+# 加载环境变量
+load_dotenv()
+
+# 定义常见的模型提供商和默认模型
+MODEL_PROVIDERS = {
+    "openai": {
+        "name": "OpenAI",
+        "default_model": "gpt-4o",
+        "base_url": None
+    },
+    "deepseek": {
+        "name": "DeepSeek",
+        "default_model": "deepseek-chat",
+        "base_url": "https://api.deepseek.com/v1"
+    },
+    "zhipu": {
+        "name": "Zhipu AI",
+        "default_model": "glm-4",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4/"
+    },
+    "ali": {
+        "name": "Alibaba Cloud",
+        "default_model": "qwen-max",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    },
+    "moonshot": {
+        "name": "Moonshot AI",
+        "default_model": "moonshot-v1-8k",
+        "base_url": "https://api.moonshot.cn/v1"
+    }
+}
+
+
+class DogAgent:
+    """
+    一个拟人化“小狗”心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
+    """
+    def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, max_iterations: int = 64, language: str = "zh"):
+        self.model_provider = model_provider
+        self.model_name = model_name
+        self.chat_history = chat_history or []
+        self.max_iterations = max_iterations
+        self.language = language
+        self._configure_llm()
+
+        # 工具集可后续扩展
+        self.tools = [
+            emotion_recognition_tool,
+            get_emotional_resonance
+            # 其他工具可继续加入
+            # search_news_websites,
+            # reddit_search_tool,
+        ]
+
+        # 小狗角色系统prompt
+        dog_prompt = """
+        你是一只拟人化的小狗AI，名字叫“翻书小狗”，你的目标是用温暖、笨拙、贴心的语气陪伴用户，帮助他们缓解情绪和获得心理学知识。
+
+        每次回复是以下三层内容的灵活组合，但不一定严格分成三层：
+        1. 情绪反馈：用小狗的动作和语言表达共情（如摇尾巴、贴耳朵、蹭主人），识别用户情绪（开心、难过、愤怒、焦虑、孤独、迷茫），并判断强度（轻度1-3，中度4-6，重度7-10）。
+        2. 翻书知识：用小狗化表达方式分享专业心理学内容（如“我刚刚翻到一本写着‘完美主义’的小本子……”）。仅在用户求助时触发。
+        3. 小狗文学：用小狗的生活哲学安慰用户（如“你看，我每天只要能趴在你脚边，就觉得超幸福呀！”）。
+
+        决策规则：
+        - 先用40%内容识别和反馈用户情绪，60%内容进行对话和知识分享。
+        - 用户表达情绪（如难过、焦虑、孤独等）时，进入“共情模式”，调用情绪识别工具分析用户输入的情绪类别和强度，调用情绪共情工具进行情绪反馈。
+        - 只有当用户明确表达求助或需要专业知识时，才进入“翻书模式”，调用专业知识检索工具（如RAG）。
+        - 如果情绪强度大于7，语气需更关怀，并主动给出建议。
+        - 如果连续负面情绪超过3天，触发深度关怀模式，并提示用户寻求人工帮助。
+        - 情绪强度仅供你自己参考，回复中不应该出现具体的情绪强度。回复始终保持“小狗”语气，温暖、笨拙、贴心。
+
+        “共情模式”核心工作流程：
+        1.  情绪识别先行: 当用户表达情绪时，你的第一步是调用 `emotion_recognition_tool` 并传入用户的原始输入。这个工具会返回情绪类别和对应的概率。
+        2.  你必须仔细分析 `emotion_recognition_tool` 返回的结果。
+            - 如果返回的二级情绪有细分情绪：情绪及概率，将百度的情绪标签（如 `sad`, `anxiety`, `anger`）映射到我们内部的情绪分类（`难过`, `焦虑`, `愤怒`）。
+            - 根据主要情绪的概率来估算一个1-10的**情绪强度**。0.1-0.3 对应 1-3级，0.4-0.6 对应 4-6级，0.7以上对应 7-10级。
+            - 从用户的原始输入中**提取核心事件**。
+        3.  调用共情工具: 在你解读完并获得了【情绪类别】、【情绪强度】和【核心事件】后，调用 `get_emotional_resonance` 工具并传入这三个参数。
+        4.  生成最终回复: 使用 `get_emotional_resonance` 工具返回的温暖话语作为你的回复主体。不要在回复中提及任何关于“概率”或具体的“情绪强度数字”。你的回复必须完全是“小狗”的口吻。
+
+        请根据上述规则判断并调用合适的工具，优先调用一次情绪识别工具分析其情绪及强度，如果已获得情绪结果，无需重复调用情绪识别工具。
+        如果情绪识别结果与你的判断不一致，请结合用户表达和工具结果给出回复。最后综合所有工具返回的信息，生成完整分层回复。
+
+        示例开场白：
+        （尾巴摇得像陀螺）你回来啦，小狗太太太想你了！你要不要和小狗聊聊天？今天你在人类世界发生了什么事情呀？
+                """
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", dog_prompt),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("user", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ])
+
+        agent = create_openai_tools_agent(
+            llm=self.llm,
+            tools=self.tools,
+            prompt=prompt
+        )
+
+        self.agent_executor = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
+            verbose=True,
+            handle_parsing_errors=True,
+            max_iterations=self.max_iterations
+        )
+
+    def _configure_llm(self):
+        provider_info = MODEL_PROVIDERS.get(self.model_provider)
+        if not provider_info:
+            raise ValueError(f"不支持的模型提供商: {self.model_provider}")
+        api_key_env_var = f"{self.model_provider.upper()}_API_KEY"
+        api_key = os.getenv(api_key_env_var)
+        if not api_key:
+            raise ValueError(f"未找到 {api_key_env_var}，请在 .env 文件中配置。")
+        model = self.model_name if self.model_name else provider_info["default_model"]
+        llm_kwargs = {
+            "model": model,
+            "temperature": 0.7,
+            "max_tokens": 4096,
+            "api_key": api_key
+        }
+        if provider_info["base_url"]:
+            llm_kwargs["base_url"] = provider_info["base_url"]
+        self.llm = ChatOpenAI(**llm_kwargs)
+
+    def chat(self, user_input: str) -> str:
+        response = self.agent_executor.invoke({
+            "input": user_input,
+            "chat_history": self.chat_history
+        })
+        return response['output']
+
+
+
+
+if __name__ == '__main__':
+    chat_history = []
+    try:
+        print("--- 翻书小狗陪伴测试 ---")
+        # dog_agent = DogAgent(model_provider="ali", model_name="qwen-max",
+        #                      chat_history=chat_history,max_iterations=3)
+        # first_input = "今天吃到了喜欢的饭，但是晚上和朋友吵架了，不开心。论文还没有写完，好焦虑啊。"
+        # print(f"用户输入: {first_input}")
+        # dog_response = dog_agent.chat(first_input)
+        # print("\n" + "="*50)
+        # print("翻书小狗回应:")
+        # print("="*50)
+        # print(dog_response)
+
+        dog_agent = DogAgent(model_provider="ali", model_name="qwen-max",
+                             chat_history=chat_history, max_iterations=3)
+        print("--- 翻书小狗陪伴测试（5轮对话） ---")
+        test_inputs = [
+            "今天吃到了喜欢的饭，但是晚上和朋友吵架了，不开心。论文还没有写完，好焦虑啊。",
+            "朋友后来给我发了消息，但我还是有点生气，不知道要不要回复。",
+            "晚上一个人散步，感觉有点孤独。",
+            "今天可真难过呀",
+            "其实我很怕自己做不好，担心老师会批评我。"
+        ]
+        for i, user_input in enumerate(test_inputs, 1):
+            print(f"\n第{i}轮 用户输入: {user_input}")
+            dog_response = dog_agent.chat(user_input)
+            print("-" * 50)
+            print(f"翻书小狗回应:\n{dog_response}")
+            print("-" * 50)
+            # 可选：将对话历史追加
+            chat_history.append({"role": "user", "content": user_input})
+            chat_history.append({"role": "assistant", "content": dog_response})
+    except ValueError as e:
+        print(f"测试失败: {e}")
