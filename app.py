@@ -269,17 +269,19 @@ def chat_stream():
                 # 定义一个异步生成器函数
                 async def async_generate():
                     nonlocal full_response
-                    async for chunk in agent.generate_newsletter_stream(user_input):
-                        # 累积响应内容
-                        if chunk.get("type") == "output":
-                            full_response += chunk.get("content", "")
-                        # 立即发送每个块到客户端
-                        yield json.dumps(chunk, ensure_ascii=False) + "\n"
+                    # 使用同步方法并模拟流式响应
+                    try:
+                        response = agent.chat(user_input)
+                        full_response = response
+                        # 模拟流式响应，一次性发送完整响应
+                        yield {"type": "output", "content": response}
+                    except Exception as e:
+                        yield {"type": "output", "content": f"生成内容时发生错误: {str(e)}"}
                 
                 # 在新事件循环中运行异步代码
                 async def run_async_code():
                     async for item in async_generate():
-                        yield item
+                        yield json.dumps(item, ensure_ascii=False) + "\n"
                         
                 # 同步包装异步生成器
                 import threading
