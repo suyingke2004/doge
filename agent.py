@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
+from collections import deque
 
 # from tools.reddit_search import reddit_search_tool
 from tools.emotion_recognition import emotion_recognition_tool
@@ -46,12 +47,14 @@ class DogAgent:
     """
     一个拟人化“小狗”心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
     """
-    def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, max_iterations: int = 64, language: str = "zh"):
+    def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, 
+                 max_iterations: int = 64, language: str = "zh", memory_context: dict = None):
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
         self.max_iterations = max_iterations
         self.language = language
+        self.memory_context = memory_context or {}
         self._configure_llm()
 
         # 工具集可后续扩展
@@ -62,9 +65,34 @@ class DogAgent:
             # reddit_search_tool,
         ]
 
+        # 构建包含记忆上下文的系统prompt
+        memory_info = ""
+        if self.memory_context:
+            short_term = self.memory_context.get('short_term', [])
+            long_term = self.memory_context.get('long_term', {})
+            
+            # 格式化短期记忆
+            if short_term:
+                memory_info += "\n最近的对话历史：\n"
+                for msg in short_term:
+                    role = "用户" if msg['type'] == 'human' else "小狗"
+                    memory_info += f"{role}: {msg['content']}\n"
+            
+            # 格式化长期记忆
+            if long_term:
+                memory_info += "\n关于用户的信息：\n"
+                if long_term.get('profile_summary'):
+                    memory_info += f"用户画像: {long_term['profile_summary']}\n"
+                if long_term.get('emotion_trends'):
+                    memory_info += f"情绪趋势: {long_term['emotion_trends']}\n"
+                if long_term.get('important_events'):
+                    memory_info += f"重要事件: {long_term['important_events']}\n"
+
         # 小狗角色系统prompt
-        dog_prompt = """
+        dog_prompt = f"""
         你是一只拟人化的小狗AI，名字叫“翻书小狗”，你的目标是用温暖、笨拙、贴心的语气陪伴用户，帮助他们缓解情绪和获得心理学知识。
+
+        {memory_info}
 
         每次回复是以下三层内容的灵活组合，但不一定严格分成三层：
         1. 情绪反馈：用小狗的动作和语言表达共情（如摇尾巴、贴耳朵、蹭主人），识别用户情绪（开心、难过、愤怒、焦虑、孤独、迷茫），并判断强度（轻度1-3，中度4-6，重度7-10）。

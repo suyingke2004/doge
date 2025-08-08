@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, Response, stream_with_context, jsonify
-from agent import NewsletterAgent
+from agent import DogAgent
 from langchain_core.messages import AIMessage, HumanMessage
 import markdown
 import os
@@ -8,9 +8,10 @@ import json
 import sys
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-from models import Base, ChatSession, ChatMessage
+from models import Base, ChatSession, ChatMessage, LongTermMemory
 import uuid
 from datetime import datetime
+from collections import deque
 
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
@@ -120,6 +121,29 @@ def download_pdf(filename):
     except Exception as e:
         return f"下载文件时出错: {str(e)}", 500
 
+def get_memory_context(user_id, db_session):
+    """
+    获取用户的短期和长期记忆上下文
+    :param user_id: 用户ID
+    :param db_session: 数据库会话
+    :return: 包含短期和长期记忆的上下文字典
+    """
+    # 获取短期记忆（最近10轮对话）
+    short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+    
+    # 获取长期记忆
+    long_term_memory = db_session.query(LongTermMemory).filter_by(user_id=user_id).first()
+    
+    return {
+        'short_term': list(short_term_memory),
+        'long_term': {
+            'profile_summary': long_term_memory.profile_summary if long_term_memory else '',
+            'emotion_trends': long_term_memory.emotion_trends if long_term_memory else {},
+            'important_events': long_term_memory.important_events if long_term_memory else {}
+        }
+    }
+
+
 # 4. 定义流式生成路由，处理所有对话
 @app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
@@ -172,6 +196,9 @@ def chat_stream():
                 session['model_name'] = model_name
                 session['maxiter'] = maxiter
                 session['language'] = language
+                
+                # 初始化短期记忆
+                session['short_term_memory'] = deque(maxlen=10)
             else:
                 model_provider = session.get('model_provider', 'deepseek')
                 model_name = session.get('model_name', None)
@@ -198,31 +225,38 @@ def chat_stream():
                 session_id = new_session.id
                 session['session_id'] = session_id
 
-            # 保存用户消息
+            # 获取用户ID（这里简化处理，实际项目中可能需要更复杂的用户认证）
+            user_id = session_id  # 使用会话ID作为用户ID的简化处理
+
+            # 获取记忆上下文
+            memory_context = get_memory_context(user_id, db_session)
+
+            # 保存用户消息到短期记忆
+            short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+            short_term_memory.append({'type': 'human', 'content': user_input})
+            session['short_term_memory'] = short_term_memory
+
+            # 保存用户消息到数据库
             user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
             db_session.add(user_message)
             db_session.commit()
 
-            # 从 session 中获取历史记录
-            chat_history_raw = session.get('chat_history', [])
-            chat_history_raw.append({'type': 'human', 'content': user_input})
-            session['chat_history'] = chat_history_raw
-
             # 将原始字典列表转换为 LangChain 消息对象列表
-            chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in chat_history_raw]
+            chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in short_term_memory]
 
             try:
                 model_provider = session.get('model_provider', 'deepseek')
                 model_name = session.get('model_name', None)
                 maxiter = session.get('maxiter', 128)
                 
-                # 创建代理实例，并传入历史记录、 maxiter 和 language 参数
-                agent = NewsletterAgent(
+                # 创建代理实例，并传入历史记录、 maxiter、language 和 memory_context 参数
+                agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
                     max_iterations=maxiter,
-                    language=language
+                    language=language,
+                    memory_context=memory_context
                 )
                 
                 # 使用流式方式调用代理生成内容
@@ -293,11 +327,19 @@ def chat_stream():
                 
                 thread.join()
 
-                # 保存AI消息
+                # 保存AI消息到短期记忆
+                short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+                short_term_memory.append({'type': 'ai', 'content': full_response})
+                session['short_term_memory'] = short_term_memory
+
+                # 保存AI消息到数据库
                 ai_message = ChatMessage(session_id=session_id, message_type='ai', content=full_response)
                 db_session.add(ai_message)
                 db_session.commit()
 
+                # 更新会话中的聊天历史（用于前端显示）
+                chat_history_raw = session.get('chat_history', [])
+                chat_history_raw.append({'type': 'human', 'content': user_input})
                 chat_history_raw.append({'type': 'ai', 'content': full_response})
                 session['chat_history'] = chat_history_raw
 

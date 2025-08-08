@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
@@ -32,3 +32,15 @@ class ChatMessage(Base):
 
     def __repr__(self):
         return f"<ChatMessage(session_id='{self.session_id}', type='{self.message_type}')>"
+
+class LongTermMemory(Base):
+    __tablename__ = 'long_term_memory'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(String(50), nullable=False)  # 用户ID，可以关联到会话或其他用户标识
+    profile_summary = Column(Text)  # 用户画像摘要
+    emotion_trends = Column(JSON)   # 情绪趋势，存储为JSON格式
+    important_events = Column(JSON) # 重要事件，存储为JSON格式
+    
+    def __repr__(self):
+        return f"<LongTermMemory(user_id='{self.user_id}')>"
