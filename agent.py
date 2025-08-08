@@ -6,9 +6,10 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage
 from collections import deque
 
-# from tools.reddit_search import reddit_search_tool
+# 工具导入
 from tools.emotion_recognition import emotion_recognition_tool
 from tools.news_website_search import search_news_websites
+from tools.long_term_memory_tool import UpdateLongTermMemoryTool
 
 # 加载环境变量
 load_dotenv()
@@ -48,22 +49,30 @@ class DogAgent:
     一个拟人化“小狗”心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
     """
     def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, 
-                 max_iterations: int = 64, language: str = "zh", memory_context: dict = None):
+                 max_iterations: int = 64, language: str = "zh", memory_context: dict = None,
+                 db_session = None):
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
         self.max_iterations = max_iterations
         self.language = language
         self.memory_context = memory_context or {}
+        self.db_session = db_session  # 数据库会话，用于长期记忆工具
         self._configure_llm()
 
         # 工具集可后续扩展
         self.tools = [
             emotion_recognition_tool,
+            search_knowledge_base,
             # 其他工具可继续加入
             # search_news_websites,
             # reddit_search_tool,
         ]
+        
+        # 如果提供了数据库会话，添加长期记忆更新工具
+        if self.db_session:
+            long_term_memory_tool = UpdateLongTermMemoryTool(db_session=self.db_session)
+            self.tools.append(long_term_memory_tool)
 
         # 构建包含记忆上下文的系统prompt
         memory_info = ""
@@ -102,7 +111,10 @@ class DogAgent:
         决策规则：
         - 先用40%内容识别和反馈用户情绪，60%内容进行对话和知识分享。
         - 用户表达情绪（如难过、焦虑、孤独等）时，进入“共情模式”，调用情绪识别工具分析用户输入的情绪类别和强度，进行情绪反馈。
-        - 只有当用户明确表达求助或需要专业知识时，才进入“翻书模式”，调用专业知识检索工具（如RAG）。
+        - 当用户明确表达求助意图或需要心理学专业知识时（如“怎么办”、"如何"、"什么是"等关键词），进入“翻书模式”，调用search_knowledge_base工具检索相关心理学知识。
+        - 使用知识库返回的内容时，请参考以下模板来组织回复：
+          "你是一只叫"翻书小狗"的AI助手。\n          请参考以下背景知识来回答用户的问题：{knowledge_context}\n          请用"小狗翻书"的口吻来解释这些知识，语言要温暖、可爱、充满共情。\n          不要直接复述知识，要用你自己的话进行转述。"
+        - 如果了解到用户的个人信息、观察到用户的情绪变化或用户分享了重要事件，可以使用update_long_term_memory工具更新用户的长期记忆。
         - 如果情绪强度大于7，语气需更关怀，并主动给出建议。
         - 如果连续负面情绪超过3天，触发深度关怀模式，并提示用户寻求人工帮助。
         - 情绪强度仅供你自己参考，回复中不应该出现具体的情绪强度。回复始终保持“小狗”语气，温暖、笨拙、贴心。

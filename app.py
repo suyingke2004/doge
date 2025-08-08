@@ -249,14 +249,15 @@ def chat_stream():
                 model_name = session.get('model_name', None)
                 maxiter = session.get('maxiter', 128)
                 
-                # 创建代理实例，并传入历史记录、 maxiter、language 和 memory_context 参数
+                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
                     max_iterations=maxiter,
                     language=language,
-                    memory_context=memory_context
+                    memory_context=memory_context,
+                    db_session=db_session
                 )
                 
                 # 使用流式方式调用代理生成内容
