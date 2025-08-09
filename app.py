@@ -156,6 +156,15 @@ def get_memory_context(user_id, db_session, flask_session):
     # 获取长期记忆
     long_term_memory = db_session.query(LongTermMemory).filter_by(user_id=user_id).first()
     
+    # 打印调试信息
+    print(f"获取记忆上下文 - User ID: {user_id}")
+    if long_term_memory:
+        print(f"长期记忆 - 用户画像: {long_term_memory.profile_summary}")
+        print(f"长期记忆 - 情绪趋势: {long_term_memory.emotion_trends}")
+        print(f"长期记忆 - 重要事件: {long_term_memory.important_events}")
+    else:
+        print("未找到长期记忆记录")
+    
     return {
         'short_term': list(short_term_memory),
         'long_term': {
@@ -257,6 +266,9 @@ def chat_stream():
 
             # 获取记忆上下文（现在包含了刚添加的用户消息）
             memory_context = get_memory_context(user_id, db_session, session)
+            
+            # 打印调试信息
+            print(f"传递给Agent的记忆上下文: {memory_context}")
 
             # 保存用户消息到数据库
             user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
@@ -271,6 +283,11 @@ def chat_stream():
                     chat_history_messages.append(HumanMessage(content=msg['content']))
                 else:
                     chat_history_messages.append(AIMessage(content=msg['content']))
+            
+            # 添加调试信息
+            print(f"DEBUG: 构建的chat_history_messages数量: {len(chat_history_messages)}")
+            for i, msg in enumerate(chat_history_messages):
+                print(f"DEBUG: chat_history_messages[{i}] = {type(msg).__name__}: {msg.content[:50]}...")
 
             try:
                 model_provider = session.get('model_provider', 'deepseek')
