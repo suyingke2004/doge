@@ -276,15 +276,20 @@ def chat_stream():
                 model_name = session.get('model_name', None)
                 maxiter = session.get('maxiter', 128)
                 
-                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 参数
-                # 不再直接传递db_session，让工具自己处理数据库连接
+                # 创建回调队列和处理程序
+                callback_queue = queue.Queue()
+                callback_handler = StreamCallbackHandler(callback_queue)
+                
+                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context、db_session 和 callback_handler 参数
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
                     max_iterations=maxiter,
                     language=language,
-                    memory_context=memory_context
+                    memory_context=memory_context,
+                    db_session=db_session,
+                    callbacks=[callback_handler]  # 添加回调处理程序
                 )
                 
                 # 使用流式方式调用代理生成内容
@@ -342,6 +347,15 @@ def chat_stream():
                 # 从队列中获取数据并发送给客户端
                 while True:
                     try:
+                        # 检查回调队列中是否有状态信息
+                        try:
+                            while True:
+                                status_item = callback_queue.get_nowait()
+                                yield json.dumps(status_item, ensure_ascii=False) + "\n"
+                        except queue.Empty:
+                            pass
+                        
+                        # 检查主队列中的数据
                         item = q.get(timeout=1)  # 1秒超时
                         if item is None:  # 完成信号
                             break
