@@ -142,15 +142,16 @@ def download_pdf(filename):
     except Exception as e:
         return f"下载文件时出错: {str(e)}", 500
 
-def get_memory_context(user_id, db_session):
+def get_memory_context(user_id, db_session, flask_session):
     """
     获取用户的短期和长期记忆上下文
     :param user_id: 用户ID
     :param db_session: 数据库会话
+    :param flask_session: Flask session对象
     :return: 包含短期和长期记忆的上下文字典
     """
     # 获取短期记忆（最近10轮对话）
-    short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+    short_term_memory = flask_session.get('short_term_memory', deque(maxlen=10))
     
     # 获取长期记忆
     long_term_memory = db_session.query(LongTermMemory).filter_by(user_id=user_id).first()
@@ -280,7 +281,7 @@ def chat_stream():
                 callback_queue = queue.Queue()
                 callback_handler = StreamCallbackHandler(callback_queue)
                 
-                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context、db_session 和 callback_handler 参数
+                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
@@ -288,9 +289,11 @@ def chat_stream():
                     max_iterations=maxiter,
                     language=language,
                     memory_context=memory_context,
-                    db_session=db_session,
-                    callbacks=[callback_handler]  # 添加回调处理程序
+                    db_session=db_session
                 )
+                
+                # 为agent_executor添加回调处理程序
+                agent.agent_executor.callbacks = [callback_handler]
                 
                 # 使用流式方式调用代理生成内容
                 full_response = ""

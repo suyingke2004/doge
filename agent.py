@@ -53,7 +53,7 @@ class DogAgent:
     """
     def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, 
                  max_iterations: int = 64, language: str = "zh", memory_context: dict = None,
-                 db_session = None, callbacks = None):
+                 db_session = None):
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
@@ -61,7 +61,7 @@ class DogAgent:
         self.language = language
         self.memory_context = memory_context or {}
         self.db_session = db_session  # 数据库会话，用于长期记忆工具
-        self.callbacks = callbacks or []  # 回调处理程序列表
+        self.callbacks = []  # 回调处理程序列表
         self._configure_llm()
 
         # 工具集可后续扩展
@@ -75,6 +75,23 @@ class DogAgent:
         
         # 如果提供了数据库会话，添加长期记忆更新工具
         if self.db_session:
+            from tools.long_term_memory_tool import UpdateLongTermMemoryTool
+            long_term_memory_tool = UpdateLongTermMemoryTool(db_session=self.db_session)
+            self.tools.append(long_term_memory_tool)
+
+        # 工具集可后续扩展
+        self.tools = [
+            emotion_recognition_tool,
+            search_knowledge_base,
+            # 其他工具可继续加入
+            # search_news_websites,
+            # reddit_search_tool,
+        ]
+        
+        # 如果提供了数据库会话，添加长期记忆更新工具
+        if self.db_session:
+            # 直接创建工具实例，避免初始化问题
+            from tools.long_term_memory_tool import UpdateLongTermMemoryTool
             long_term_memory_tool = UpdateLongTermMemoryTool(db_session=self.db_session)
             self.tools.append(long_term_memory_tool)
 
