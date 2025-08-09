@@ -162,11 +162,6 @@ class DogAgent:
         self.llm = ChatOpenAI(**llm_kwargs)
 
     def chat(self, user_input: str) -> str:
-        # 添加调试输出
-        print(f"DEBUG: chat_history length = {len(self.chat_history)}")
-        for i, msg in enumerate(self.chat_history):
-            print(f"DEBUG: chat_history[{i}] = {type(msg).__name__}: {msg.content[:50]}...")
-            
         response = self.agent_executor.invoke({
             "input": user_input,
             "chat_history": self.chat_history
