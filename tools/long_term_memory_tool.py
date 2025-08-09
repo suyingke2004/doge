@@ -1,13 +1,21 @@
+import sys
+import os
 from langchain.tools import BaseTool
 from typing import Optional, Dict, Any
 from sqlalchemy.orm import Session
 import json
+
+# 添加项目根目录到sys.path，确保能够正确导入
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from tools.long_term_memory import update_long_term_memory, get_user_long_term_memory
 
 
 class UpdateLongTermMemoryTool(BaseTool):
-    name = "update_long_term_memory"
-    description = """用于更新用户的长期记忆信息。
+    name: str = "update_long_term_memory"
+    description: str = """用于更新用户的长期记忆信息。
     
     当你了解到用户的个人信息、观察到用户的情绪变化或用户分享了重要事件时，可以使用此工具更新用户的长期记忆。
     
@@ -23,9 +31,8 @@ class UpdateLongTermMemoryTool(BaseTool):
     - 情绪趋势和重要事件会与现有数据合并，不会覆盖
     """
 
-    def __init__(self, db_session: Session):
+    def __init__(self):
         super().__init__()
-        self.db_session = db_session
 
     def _run(
         self,
@@ -46,19 +53,9 @@ class UpdateLongTermMemoryTool(BaseTool):
             if important_events:
                 important_events = json.loads(important_events)
                 
-            # 调用更新函数
-            success = update_long_term_memory(
-                db_session=self.db_session,
-                user_id=user_id,
-                profile_summary=profile_summary,
-                emotion_trends=emotion_trends,
-                important_events=important_events
-            )
-            
-            if success:
-                return "长期记忆更新成功"
-            else:
-                return "长期记忆更新失败"
+            # 从工具参数中获取db_session
+            # 注意：这种方法可能不适用于所有情况，我们会在Agent中特殊处理
+            return "工具调用需要在Agent中特殊处理"
                 
         except json.JSONDecodeError as e:
             return f"参数格式错误: {e}"

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, Response, stream_with_context, jsonify
-from agent import DogAgent
+from agent import NewsletterAgent
 from langchain_core.messages import AIMessage, HumanMessage
 import markdown
 import os
@@ -15,9 +15,9 @@ from collections import deque
 
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
-# 设置一个固定的密钥，以便使用 session
+# 设置一个密钥，以便使用 session
 # 在生产环境中，应使用更安全的方式管理密钥，例如环境变量
-app.secret_key = "a_fixed_secret_key_for_testing_purposes_only"
+app.secret_key = os.urandom(24)
 
 # 数据库设置
 DATABASE_URL = "sqlite:///chat_history.db"
@@ -143,14 +143,13 @@ def get_memory_context(user_id, db_session):
         }
     }
 
-
 # 4. 定义流式生成路由，处理所有对话
 @app.route('/chat_stream', methods=['GET', 'POST'])
 def chat_stream():
     """处理用户的提问并以流式方式返回响应"""
     # 获取数据库会话
     from sqlalchemy.orm import sessionmaker
-    from models import ChatSession, ChatMessage
+    from models import ChatSession, ChatMessage, LongTermMemory
     from sqlalchemy import create_engine
     
     # 数据库设置
@@ -226,52 +225,32 @@ def chat_stream():
                 session['session_id'] = session_id
 
             # 获取用户ID（这里简化处理，实际项目中可能需要更复杂的用户认证）
-            user_id = session_id  # 使用会话ID作为用户ID的简化处理
+                user_id = session_id  # 使用会话ID作为用户ID的简化处理
 
-            # 获取记忆上下文
-            memory_context = get_memory_context(user_id, db_session)
+                # 获取记忆上下文
+                memory_context = get_memory_context(user_id, db_session)
 
-            # 保存用户消息到短期记忆
-            short_term_memory = session.get('short_term_memory', deque(maxlen=10))
-            short_term_memory.append({'type': 'human', 'content': user_input})
-            session['short_term_memory'] = short_term_memory
+                # 保存用户消息到短期记忆
+                short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+                short_term_memory.append({'type': 'human', 'content': user_input})
+                session['short_term_memory'] = short_term_memory
 
-            # 保存用户消息到数据库
-            user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
-            db_session.add(user_message)
-            db_session.commit()
+                # 保存用户消息到数据库
+                user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
+                db_session.add(user_message)
+                db_session.commit()
 
-            # 将原始字典列表转换为 LangChain 消息对象列表，并添加从memory_context获取的短期记忆
-            chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in short_term_memory]
-            
-            # 如果memory_context中也有短期记忆，也添加进去（避免重复）
-            if memory_context and 'short_term' in memory_context:
-                for msg in memory_context['short_term']:
-                    # 检查是否已经存在
-                    exists = any(
-                        existing_msg.content == msg['content'] 
-                        for existing_msg in chat_history_messages
-                    )
-                    if not exists:
-                        if msg['type'] == 'human':
-                            chat_history_messages.append(HumanMessage(content=msg['content']))
-                        else:
-                            chat_history_messages.append(AIMessage(content=msg['content']))
+                # 将原始字典列表转换为 LangChain 消息对象列表
+                chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in short_term_memory]
 
-            try:
-                model_provider = session.get('model_provider', 'deepseek')
-                model_name = session.get('model_name', None)
-                maxiter = session.get('maxiter', 128)
-                
-                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
+                # 创建代理实例，并传入历史记录、 maxiter、language 和 memory_context 参数
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
                     max_iterations=maxiter,
                     language=language,
-                    memory_context=memory_context,
-                    db_session=db_session
+                    memory_context=memory_context
                 )
                 
                 # 使用流式方式调用代理生成内容
@@ -279,23 +258,22 @@ def chat_stream():
                 
                 # 使用 asyncio.run 来处理异步代码（推荐方法）
                 import asyncio
+                import json
                 
                 # 定义一个异步生成器函数
                 async def async_generate():
                     nonlocal full_response
-                    # 使用同步方法并模拟流式响应
-                    try:
-                        response = agent.chat(user_input)
-                        full_response = response
-                        # 模拟流式响应，一次性发送完整响应
-                        yield {"type": "output", "content": response}
-                    except Exception as e:
-                        yield {"type": "output", "content": f"生成内容时发生错误: {str(e)}"}
+                    async for chunk in agent.generate_newsletter_stream(user_input):
+                        # 累积响应内容
+                        if chunk.get("type") == "output":
+                            full_response += chunk.get("content", "")
+                        # 立即发送每个块到客户端
+                        yield json.dumps(chunk, ensure_ascii=False) + "\n"
                 
                 # 在新事件循环中运行异步代码
                 async def run_async_code():
                     async for item in async_generate():
-                        yield json.dumps(item, ensure_ascii=False) + "\n"
+                        yield item
                         
                 # 同步包装异步生成器
                 import threading
