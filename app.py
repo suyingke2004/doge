@@ -1,17 +1,24 @@
-from flask import Flask, render_template, request, session, redirect, url_for, Response, stream_with_context, jsonify
-from agent import DogAgent
-from langchain_core.messages import AIMessage, HumanMessage
-import markdown
-import os
-import asyncio
-import json
-import sys
-from sqlalchemy import create_engine, desc
-from sqlalchemy.orm import sessionmaker
-from models import Base, ChatSession, ChatMessage, LongTermMemory
-import uuid
-from datetime import datetime
-from collections import deque
+import queue
+from langchain_core.callbacks import BaseCallbackHandler
+
+class StreamCallbackHandler(BaseCallbackHandler):
+    """自定义回调处理程序，用于捕获工具调用状态"""
+    
+    def __init__(self, queue):
+        self.queue = queue
+
+    def on_tool_start(self, serialized, input_str, **kwargs):
+        """工具开始执行时调用"""
+        tool_name = serialized.get("name", "未知工具")
+        self.queue.put({"type": "status", "content": f"[正在调用工具: {tool_name}]"})
+
+    def on_tool_end(self, output, **kwargs):
+        """工具执行结束时调用"""
+        self.queue.put({"type": "status", "content": "[工具调用完成]"})
+
+    def on_tool_error(self, error, **kwargs):
+        """工具执行出错时调用"""
+        self.queue.put({"type": "status", "content": f"[工具调用出错: {str(error)}]"})
 
 # 1. 创建 Flask 应用实例
 app = Flask(__name__)
@@ -228,50 +235,42 @@ def chat_stream():
             # 获取用户ID（这里简化处理，实际项目中可能需要更复杂的用户认证）
             user_id = session_id  # 使用会话ID作为用户ID的简化处理
 
-            # 获取记忆上下文
-            memory_context = get_memory_context(user_id, db_session)
-
             # 保存用户消息到短期记忆
             short_term_memory = session.get('short_term_memory', deque(maxlen=10))
             short_term_memory.append({'type': 'human', 'content': user_input})
             session['short_term_memory'] = short_term_memory
+
+            # 获取记忆上下文（现在包含了刚添加的用户消息）
+            memory_context = get_memory_context(user_id, db_session)
 
             # 保存用户消息到数据库
             user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
             db_session.add(user_message)
             db_session.commit()
 
-            # 将原始字典列表转换为 LangChain 消息对象列表，并添加从memory_context获取的短期记忆
-            chat_history_messages = [HumanMessage(**msg) if msg['type'] == 'human' else AIMessage(**msg) for msg in short_term_memory]
-            
-            # 如果memory_context中也有短期记忆，也添加进去（避免重复）
-            if memory_context and 'short_term' in memory_context:
-                for msg in memory_context['short_term']:
-                    # 检查是否已经存在
-                    exists = any(
-                        existing_msg.content == msg['content'] 
-                        for existing_msg in chat_history_messages
-                    )
-                    if not exists:
-                        if msg['type'] == 'human':
-                            chat_history_messages.append(HumanMessage(content=msg['content']))
-                        else:
-                            chat_history_messages.append(AIMessage(content=msg['content']))
+            # 将原始字典列表转换为 LangChain 消息对象列表
+            # 直接使用从session获取的短期记忆构建chat_history_messages
+            chat_history_messages = []
+            for msg in short_term_memory:
+                if msg['type'] == 'human':
+                    chat_history_messages.append(HumanMessage(content=msg['content']))
+                else:
+                    chat_history_messages.append(AIMessage(content=msg['content']))
 
             try:
                 model_provider = session.get('model_provider', 'deepseek')
                 model_name = session.get('model_name', None)
                 maxiter = session.get('maxiter', 128)
                 
-                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
+                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 参数
+                # 不再直接传递db_session，让工具自己处理数据库连接
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
                     max_iterations=maxiter,
                     language=language,
-                    memory_context=memory_context,
-                    db_session=db_session
+                    memory_context=memory_context
                 )
                 
                 # 使用流式方式调用代理生成内容

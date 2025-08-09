@@ -52,15 +52,13 @@ class DogAgent:
     一个拟人化“小狗”心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
     """
     def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, 
-                 max_iterations: int = 64, language: str = "zh", memory_context: dict = None,
-                 db_session = None):
+                 max_iterations: int = 64, language: str = "zh", memory_context: dict = None):
         self.model_provider = model_provider
         self.model_name = model_name
         self.chat_history = chat_history or []
         self.max_iterations = max_iterations
         self.language = language
         self.memory_context = memory_context or {}
-        self.db_session = db_session  # 数据库会话，用于长期记忆工具
         self._configure_llm()
 
         # 工具集可后续扩展
@@ -71,11 +69,6 @@ class DogAgent:
             # search_news_websites,
             # reddit_search_tool,
         ]
-        
-        # 如果提供了数据库会话，添加长期记忆更新工具
-        if self.db_session:
-            long_term_memory_tool = UpdateLongTermMemoryTool(db_session=self.db_session)
-            self.tools.append(long_term_memory_tool)
 
         # 构建包含记忆上下文的系统prompt
         memory_info = ""
@@ -169,6 +162,11 @@ class DogAgent:
         self.llm = ChatOpenAI(**llm_kwargs)
 
     def chat(self, user_input: str) -> str:
+        # 添加调试输出
+        print(f"DEBUG: chat_history length = {len(self.chat_history)}")
+        for i, msg in enumerate(self.chat_history):
+            print(f"DEBUG: chat_history[{i}] = {type(msg).__name__}: {msg.content[:50]}...")
+            
         response = self.agent_executor.invoke({
             "input": user_input,
             "chat_history": self.chat_history

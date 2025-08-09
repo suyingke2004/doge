@@ -228,7 +228,7 @@
                                 }
                             } catch (e) {
                                 accumulatedText += line;
-                                aiResponseDiv.innerHTML = accumulatedText;
+                                aiResponseDiv.innerHTML = marked.parse(accumulatedText);
                             }
                         }
                         chatWindow.scrollTop = chatWindow.scrollHeight;

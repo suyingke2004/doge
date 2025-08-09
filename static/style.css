@@ -344,10 +344,9 @@ button:hover {
     border-radius: 4px;
     font-style: italic;
     color: #6c757d;
-    display: inline-block;
+    display: none; /* 默认隐藏 */
     border: 2px solid #007bff; /* 添加边框以便调试 */
-    height: 60px;
-    line-height: 40px; /* 垂直居中文字 */
+    min-height: 20px;
     box-sizing: border-box;
 }
 

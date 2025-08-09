@@ -64,4 +64,6 @@ wheels/
 # Temporary files
 *.tmp
 *.temp
-works/
+works/chat_history.db
+knowledge_base/vector_db.index
+knowledge_base/metadata.npy
