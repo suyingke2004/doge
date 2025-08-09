@@ -30,10 +30,14 @@ class UpdateLongTermMemoryTool(BaseTool):
     - 参数可以部分提供，只更新提供的字段
     - 情绪趋势和重要事件会与现有数据合并，不会覆盖
     """
+    
+    # 允许设置额外的属性
+    class Config:
+        extra = "allow"
 
     def __init__(self, db_session: Session):
         super().__init__()
-        self.db_session: Session = db_session
+        self.db_session = db_session
 
     def _run(
         self,
