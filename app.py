@@ -256,7 +256,7 @@ def chat_stream():
             session['short_term_memory'] = short_term_memory
 
             # 获取记忆上下文（现在包含了刚添加的用户消息）
-            memory_context = get_memory_context(user_id, db_session)
+            memory_context = get_memory_context(user_id, db_session, session)
 
             # 保存用户消息到数据库
             user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
