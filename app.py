@@ -8,7 +8,7 @@ import json
 import sys
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-from models import Base, ChatSession, ChatMessage, LongTermMemory
+from models import Base, User, ChatSession, ChatMessage, LongTermMemory
 import uuid
 from datetime import datetime
 from collections import deque
@@ -61,10 +61,12 @@ def resource_path(relative_path):
 app.template_folder = resource_path('templates')
 app.static_folder = resource_path('static')
 
-# 2. 定义主页路由（重定向到流式端点）
+# 2. 定义主页路由
 @app.route('/')
 def index():
-    """重定向到流式聊天端点"""
+    """显示主页，可以是登录或注册页面"""
+    # 简单实现：重定向到聊天流端点
+    # 在更完整的实现中，这里可能需要检查用户是否已登录
     return redirect(url_for('chat_stream'))
 
 # 3. 定义开始新对话的路由
@@ -151,7 +153,7 @@ def get_memory_context(user_id, db_session, flask_session):
     :return: 包含短期和长期记忆的上下文字典
     """
     # 获取短期记忆（最近10轮对话）
-    short_term_memory = flask_session.get('short_term_memory', deque(maxlen=10))
+    short_term_memory = flask_session.get('short_term_memory', [])
     
     # 添加调试信息
     print(f"DEBUG: 从Flask会话中获取的短期记忆: {list(short_term_memory)}")
@@ -232,7 +234,7 @@ def chat_stream():
                 session['language'] = language
                 
                 # 初始化短期记忆
-                session['short_term_memory'] = deque(maxlen=10)
+                session['short_term_memory'] = []
             else:
                 model_provider = session.get('model_provider', 'deepseek')
                 model_name = session.get('model_name', None)
@@ -263,9 +265,10 @@ def chat_stream():
             user_id = session_id  # 使用会话ID作为用户ID的简化处理
 
             # 保存用户消息到短期记忆
-            short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+            short_term_memory = session.get('short_term_memory', [])
             short_term_memory.append({'type': 'human', 'content': user_input})
             session['short_term_memory'] = short_term_memory
+            session.modified = True
             
             # 添加调试信息
             print(f"DEBUG: 保存用户消息后的短期记忆: {list(short_term_memory)}")
@@ -412,9 +415,11 @@ def chat_stream():
                 thread.join()
 
                 # 保存AI消息到短期记忆
-                short_term_memory = session.get('short_term_memory', deque(maxlen=10))
+                short_term_memory = session.get('short_term_memory', [])
                 short_term_memory.append({'type': 'ai', 'content': full_response})
-                session['short_term_memory'] = short_term_memory
+                # 确保短期记忆不超过10条
+                session['short_term_memory'] = short_term_memory[-10:]
+                session.modified = True
 
                 # 保存AI消息到数据库
                 ai_message = ChatMessage(session_id=session_id, message_type='ai', content=full_response)
@@ -426,6 +431,7 @@ def chat_stream():
                 chat_history_raw.append({'type': 'human', 'content': user_input})
                 chat_history_raw.append({'type': 'ai', 'content': full_response})
                 session['chat_history'] = chat_history_raw
+                session.modified = True
 
             except Exception as e:
                 print(f"生成内容时出错: {e}")
@@ -522,6 +528,87 @@ def history_page():
     """显示聊天历史记录页面"""
     from flask import render_template
     return render_template('history.html')
+
+
+# 3.12 定义用户注册页面路由
+@app.route('/register')
+def register_page():
+    """显示用户注册页面"""
+    return render_template('register.html')
+
+
+# 3.13 定义用户注册API端点
+@app.route('/api/user/register', methods=['POST'])
+def register_user():
+    """用户注册接口"""
+    from models import User
+    from werkzeug.security import generate_password_hash
+    import json
+    
+    try:
+        # 获取请求数据
+        data = request.get_json()
+        
+        # 验证必要字段
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email')
+        
+        if not username or not password or not email:
+            return jsonify({
+                "status": "error",
+                "code": 400,
+                "message": "缺少必要参数: username, password, email"
+            }), 400
+        
+        # 检查用户名和邮箱是否已存在
+        db_session = SessionLocal()
+        try:
+            existing_user = db_session.query(User).filter(
+                (User.username == username) | (User.email == email)
+            ).first()
+            
+            if existing_user:
+                return jsonify({
+                    "status": "error",
+                    "code": 409,
+                    "message": "用户名或邮箱已存在"
+                }), 409
+            
+            # 创建新用户
+            password_hash = generate_password_hash(password)
+            new_user = User(
+                username=username,
+                email=email,
+                password_hash=password_hash
+            )
+            
+            db_session.add(new_user)
+            db_session.commit()
+            
+            # 生成访问令牌（简化实现，实际项目中应使用JWT等）
+            import secrets
+            access_token = secrets.token_urlsafe(32)
+            
+            return jsonify({
+                "status": "success",
+                "code": 200,
+                "message": "注册成功",
+                "response_data": {
+                    "user_id": new_user.id,
+                    "access_token": access_token,
+                    "expires_in": 3600  # 1小时过期
+                }
+            })
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "code": 500,
+            "message": f"注册失败: {str(e)}"
+        }), 500
 
 
 # 启动应用的入口

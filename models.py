@@ -6,14 +6,33 @@ import uuid
 
 Base = declarative_base()
 
+class User(Base):
+    __tablename__ = 'user'
+    
+    id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()))
+    username = Column(String(50), unique=True, nullable=False)
+    email = Column(String(100), unique=True, nullable=False)
+    password_hash = Column(String(128), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime)
+    
+    # 关联会话
+    sessions = relationship("ChatSession", back_populates="user")
+    
+    def __repr__(self):
+        return f"<User(id='{self.id}', username='{self.username}', email='{self.email}')>"
+
 class ChatSession(Base):
     __tablename__ = 'chat_session'
     
     id = Column(String(50), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(50), ForeignKey('user.id'))
     start_time = Column(DateTime, default=datetime.utcnow)
     # 添加一个字段来存储第一个用户问题作为会话标题
     title = Column(String(200), nullable=True)
     
+    # 关联用户和消息
+    user = relationship("User", back_populates="sessions")
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
     def __repr__(self):

@@ -81,6 +81,11 @@ The application will be available at `http://localhost:5001`.
    - Switch between Chinese and English interfaces
    - Generate content in both languages with appropriate prompts
 
+8. **User Registration and Authentication**:
+   - New user registration with unique username and email
+   - Secure password storage with hashing
+   - Access tokens for authenticated API access
+
 ## Tech Stack
 
 - **Language**: Python 3.11
@@ -112,21 +117,26 @@ The application will be available at `http://localhost:5001`.
 1. **Access the Application**:
    Visit `http://localhost:5001` in your browser.
 
-2. **Select Model**:
+2. **User Registration** (New Users):
+   - Navigate to the registration page
+   - Provide a unique username, valid email, and secure password
+   - Submit the registration form to create your account
+
+3. **Select Model**:
    - Choose AI model provider (e.g., DeepSeek, OpenAI, etc.)
    - Select specific model (e.g., gpt-4o, deepseek-chat, etc.)
    - Set maximum iterations (default is 128)
 
-3. **Enter Topic**:
+4. **Enter Topic**:
    Enter your interested news topic in the input box, such as "latest developments in artificial intelligence".
 
-4. **View Results**:
+5. **View Results**:
    AI will automatically gather relevant information and generate a newsletter, with content displayed in real-time via streaming.
 
-5. **Continue Conversation**:
+6. **Continue Conversation**:
    You can continue asking questions for more details, and the agent will provide coherent answers based on previous conversation history.
 
-6. **Content Delivery**:
+7. **Content Delivery**:
    - Request email delivery: "Please send this newsletter to me via email"
    - Request PDF export: "Please export this newsletter as PDF"
 
@@ -176,6 +186,9 @@ python -m pytest tests/ -v
 
 # Run specific test file
 python -m pytest tests/test_tools.py -v
+
+# Run user registration test
+python -m pytest tests/test_user_registration.py -v
 ```
 
 ### Extensibility
@@ -186,6 +199,12 @@ The project uses a modular design that's easy to extend:
 2. Add new tools: Create new modules in `tools/` directory and register in `agent.py`
 3. Add new data sources: Implement corresponding tool functions and register with the agent
 4. Enhance UI features: Modify files in `templates/` and `static/` directories
+5. Add new user features: Extend the User model and related API endpoints
+
+## API Documentation
+
+Detailed API documentation:
+- [API Documentation](API_DOCUMENTATION.md)
 
 ## Future Development Plans
 
@@ -203,6 +222,9 @@ The project uses a modular design that's easy to extend:
 
 5. **Multilingual Support**:
    Extend support for more languages in content generation.
+
+6. **User Profile Management**:
+   Allow users to manage their profile information and preferences.
 
 ## Important Notes
 
@@ -250,3 +272,8 @@ Detailed technical documentation:
 5. **Content Delivery Failed**:
    - Check SendGrid API key and sender email configuration
    - Confirm wkhtmltopdf is installed (required for PDF export)
+
+6. **User Registration Issues**:
+   - Ensure username and email are unique
+   - Check if all required fields are filled
+   - Verify the application can write to the database

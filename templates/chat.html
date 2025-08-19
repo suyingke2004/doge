@@ -90,6 +90,7 @@
                 
                 <!-- 新对话按钮移到这里 -->
                 <a href="{{ url_for('new_chat') }}" class="new-chat-link">开始新对话</a>
+                <a href="{{ url_for('register_page') }}" class="register-link">用户注册</a>
             </div>
         </div>
     </div>
@@ -369,6 +370,7 @@
             const chatInputPlaceholder = document.getElementById('chat-topic-input');
             const chatSubmitBtn = document.getElementById('chat-submit-btn');
             const newChatLink = document.querySelector('.new-chat-link');
+            const registerLink = document.querySelector('.register-link');
             
             // 中英文文本映射
             const translations = {
@@ -381,7 +383,8 @@
                     'maxiter': '最大迭代次数',
                     'input-placeholder': '输入您的问题...',
                     'submit-btn': '发送',
-                    'new-chat': '开始新对话'
+                    'new-chat': '开始新对话',
+                    'register': '用户注册'
                 },
                 'en': {
                     'page-title': 'News Chat',
@@ -392,7 +395,8 @@
                     'maxiter': 'Max Iterations',
                     'input-placeholder': 'Enter your question...',
                     'submit-btn': 'Send',
-                    'new-chat': 'Start New Chat'
+                    'new-chat': 'Start New Chat',
+                    'register': 'User Registration'
                 }
             };
             
@@ -412,6 +416,7 @@
                     if (chatInputPlaceholder) chatInputPlaceholder.placeholder = t['input-placeholder'];
                     if (chatSubmitBtn) chatSubmitBtn.textContent = t['submit-btn'];
                     if (newChatLink) newChatLink.textContent = t['new-chat'];
+                    if (registerLink) registerLink.textContent = t['register'];
                 }
                 
                 // 初始化文本
