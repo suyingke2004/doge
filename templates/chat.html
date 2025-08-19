@@ -237,8 +237,42 @@
                 } catch (error) {
                     console.error('Error:', error);
                     aiResponseDiv.textContent = '抱歉，发生错误: ' + error.message;
+                } finally {
+                    // 刷新历史记录
+                    refreshHistory();
                 }
             });
+
+            // 刷新历史记录的函数
+            function refreshHistory() {
+                fetch('/history')
+                    .then(response => response.json())
+                    .then(data => {
+                        const historyList = document.getElementById('history-list');
+                        if (data.error) {
+                            historyList.innerHTML = `<li>加载出错: ${data.error}</li>`;
+                            return;
+                        }
+                        if (data.length === 0) {
+                            historyList.innerHTML = '<li>无历史记录</li>';
+                            return;
+                        }
+                        historyList.innerHTML = '';
+                        data.forEach(item => {
+                            const listItem = document.createElement('li');
+                            const link = document.createElement('a');
+                            link.href = `/history/${item.id}`;
+                            // 截取标题的前30个字符，如果超过则添加省略号
+                            const title = item.title.length > 30 ? item.title.substring(0, 30) + '...' : item.title;
+                            link.textContent = title;
+                            listItem.appendChild(link);
+                            historyList.appendChild(listItem);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('刷新历史记录时出错:', error);
+                    });
+            }
 
             });
 
