@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>翻书小狗 - 聊天</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_chat.css') }}">
+</head>
+<body>
+    <!-- 顶部全局导航条 -->
+    <header class="global-header">
+        <div class="header-left">
+            <!-- Logo图片（需替换为实际logo.png） -->
+             
+            <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="Logo" class="logo-img">
+            <span class="product-name">翻书小狗</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
+        </nav>
+        <div class="header-right">
+            <!-- 个人/设置图标（需替换为实际avatar/setting.png） -->
+            <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="个人中心" class="user-avatar">
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 左侧会话列表 -->
+        <aside class="sidebar">
+            <ul class="session-list" id="session-list">
+                <li class="session-item {% if active_session == 'dog' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="和小狗聊" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">和小狗聊</div>
+                        <div class="session-preview">小狗陪你聊聊心事</div>
+                    </div>
+                </li>
+                <li class="session-item shortcut {% if active_session == 'diary' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_icon.png') }}" alt="晚安日记" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">晚安日记</div>
+                        <div class="session-preview">记录你的心情和故事</div>
+                    </div>
+                </li>
+            </ul>
+            
+{#            <button class="load-more-btn" id="load-more-sessions">加载更多会话</button>#}
+    </aside>
+        <!-- 中间主对话区 -->
+        <main class="chat-main">
+            <!-- 会话头 -->
+            <div class="chat-header">
+                <!-- 小狗头像（需替换为实际dog_avatar.png） -->
+                <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="小狗头像" class="chat-dog-avatar">
+                <div class="chat-title">
+                    <div class="chat-dog-name">翻书小狗</div>
+                    <div class="chat-status" id="chat-status">正在专心聆听...</div>
+                </div>
+            </div>
+            <!-- 消息流区域 -->
+            <div class="chat-history" id="chat-history">
+                <!-- 消息气泡，左右分列 -->
+                {% for msg in messages %}
+                    {% if msg.type == 'user' %}
+                    <div class="chat-bubble user-bubble">
+                        <div class="bubble-content">
+                            <span class="bubble-text">{{ msg.content }}</span>
+                        </div>
+                        <!-- 用户头像（需替换为实际user_avatar.png） -->
+                        <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="用户头像" class="bubble-avatar">
+                    </div>
+                    {% elif msg.type == 'dog' %}
+                    <div class="chat-bubble dog-bubble">
+                        <!-- 小狗头像 -->
+                        <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="小狗头像" class="bubble-avatar">
+                        <div class="bubble-content">
+                            <span class="bubble-text">{{ msg.content }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if msg.timestamp %}
+                    <div class="msg-timestamp">{{ msg.timestamp }}</div>
+                    {% endif %}
+                {% endfor %}
+                <!-- 加载历史消息指示器 -->
+                <div class="history-loading" id="history-loading" style="display:none;">加载历史消息中...</div>
+            </div>
+            <!-- 输入区 -->
+            <div class="chat-input-area">
+                <form id="chat-form" autocomplete="off">
+                    <textarea id="chat-input" class="chat-input" rows="1" placeholder="和小狗分享你的心情..." required></textarea>
+                    <!-- 麦克风图标（占位） -->
+                    <button type="button" class="mic-btn" title="语音功能开发中" disabled>
+                        <!-- 可替换为实际mic.svg -->
+                        <img src="{{ url_for('static', filename='mic.svg') }}" alt="麦克风">
+                    </button>
+                    <button type="submit" class="send-btn">发送</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='main_chat.js') }}"></script>
+</body>
+</html>

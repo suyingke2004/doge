@@ -1,0 +1,455 @@
+/* static/main_chat.css */
+
+/* 全局基础样式 */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "微软雅黑", "Microsoft YaHei", Arial, sans-serif;
+    background: #f9f6f1;
+    color: #4a3c1a;
+}
+
+/* 顶部导航栏 */
+.global-header {
+    width: 100%;
+    height: 56px;
+    background: #fffbe9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0e6d2;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    box-sizing: border-box;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    margin-left: 24px;
+}
+
+.logo-img {
+    width: 36px;
+    height: 36px;
+    margin-right: 10px;
+    border-radius: 50%;
+    background: #ffe4b5;
+    object-fit: cover;
+}
+
+.product-name {
+    font-size: 22px;
+    font-weight: bold;
+    color: #b97a56;
+    letter-spacing: 2px;
+}
+
+.header-nav {
+    display: flex;
+    gap: 32px;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: #7c5c38;
+    font-size: 16px;
+    padding: 8px 0;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.nav-item.active,
+.nav-item:hover {
+    color: #ff9900;
+    font-weight: bold;
+}
+
+.header-right {
+    margin-right: 32px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #ffe4b5;
+    object-fit: cover;
+    border: 1.5px solid #f0e6d2;
+}
+
+/* 主体三栏布局 */
+.main-layout {
+    display: flex;
+    margin-top: 56px; /* header高度 */
+    height: calc(100vh - 56px);
+    background: #f9f6f1;
+}
+
+/* 左侧会话栏 */
+.sidebar {
+    width: 240px;
+    background: #f7f1e6;
+    border-right: 1px solid #f0e6d2;
+    display: flex;
+    flex-direction: column;
+    padding-top: 18px;
+    box-sizing: border-box;
+}
+
+.sidebar-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #b97a56;
+    margin-left: 24px;
+    margin-bottom: 12px;
+}
+
+.session-list {
+    list-style: none;
+    padding: 0 0 0 0;
+    margin: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 18px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s;
+    margin: 0 8px 4px 8px;
+}
+
+.session-item.active,
+.session-item:hover {
+    background: #fffbe9;
+}
+
+.session-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+    background: #ffe4b5;
+}
+
+.session-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.session-name {
+    font-size: 15px;
+    font-weight: bold;
+    color: #7c5c38;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-preview {
+    font-size: 13px;
+    color: #bfae9a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.unread-dot {
+    width: 8px;
+    height: 8px;
+    background: #ff9900;
+    border-radius: 50%;
+    margin-left: 8px;
+}
+
+.shortcut {
+    /* background: #fffbe9; */
+    margin-top: 10px;
+}
+
+.load-more-btn {
+    margin: 12px auto 0 auto;
+    display: block;
+    padding: 6px 18px;
+    background: #ffe4b5;
+    color: #b97a56;
+    border: none;
+    border-radius: 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.load-more-btn:hover {
+    background: #ffdf9e;
+}
+
+/* 中间主对话区 */
+.chat-main {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    background: #f9f6f1;
+    min-width: 0;
+}
+
+/* 会话头 */
+.chat-header {
+    display: flex;
+    align-items: center;
+    padding: 18px 24px 12px 24px;
+    border-bottom: 1px solid #f0e6d2;
+    background: #fffbe9;
+}
+
+.chat-dog-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin-right: 16px;
+    background: #ffe4b5;
+    object-fit: cover;
+}
+
+.chat-title {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-dog-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #b97a56;
+}
+
+.chat-status {
+    font-size: 14px;
+    color: #bfae9a;
+    margin-top: 2px;
+}
+
+/* 消息流区域 */
+.chat-history {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 24px 0 16px 0;
+    background: #f9f6f1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+}
+
+/* 消息气泡 */
+.chat-bubble {
+    display: flex;
+    align-items: flex-end;
+    margin: 0 24px;
+    max-width: 70%;
+}
+
+.user-bubble {
+    flex-direction: row-reverse;
+    align-self: flex-end;
+}
+
+.dog-bubble {
+    flex-direction: row;
+    align-self: flex-start;
+}
+
+.bubble-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    margin: 0 8px;
+    background: #ffe4b5;
+    object-fit: cover;
+}
+
+.bubble-content {
+    display: flex;
+    align-items: center;
+}
+
+.bubble-text {
+    display: inline-block;
+    padding: 12px 18px;
+    border-radius: 18px;
+    font-size: 16px;
+    line-height: 1.6;
+    max-width: 340px;
+    word-break: break-all;
+    box-shadow: 0 2px 8px rgba(200,180,120,0.06);
+}
+
+.user-bubble .bubble-text {
+    background: #fffbe9;
+    color: #7c5c38;
+    border-bottom-right-radius: 8px;
+}
+
+.dog-bubble .bubble-text {
+    background: #ffe4b5;
+    color: #4a3c1a;
+    border-bottom-left-radius: 8px;
+}
+
+/* 时间戳 */
+.msg-timestamp {
+    text-align: center;
+    color: #bfae9a;
+    font-size: 13px;
+    margin: 4px 0 0 0;
+}
+
+/* 历史加载指示器 */
+.history-loading {
+    text-align: center;
+    color: #bfae9a;
+    font-size: 14px;
+    margin: 8px 0;
+}
+
+/* 输入区 */
+.chat-input-area {
+    padding: 14px 24px 14px 24px;
+    background: #fffbe9;
+    border-top: 1px solid #f0e6d2;
+    display: flex;
+    align-items: center;
+}
+
+#chat-form {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 8px;
+}
+
+.chat-input {
+    flex: 1 1 auto;
+    min-height: 38px;
+    max-height: 120px;
+    resize: none;
+    border: 1.5px solid #ffe4b5;
+    border-radius: 18px;
+    padding: 10px 16px;
+    font-size: 16px;
+    background: #fff;
+    color: #4a3c1a;
+    outline: none;
+    transition: border 0.2s;
+}
+
+.chat-input:focus {
+    border: 1.5px solid #ff9900;
+    background: #fffbe9;
+}
+
+.mic-btn {
+    background: none;
+    border: none;
+    padding: 0 8px;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.mic-btn img {
+    width: 24px;
+    height: 24px;
+}
+
+.send-btn {
+    background: #ff9900;
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 22px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.send-btn:hover {
+    background: #ffa733;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+    width: 8px;
+    background: #f7f1e6;
+}
+::-webkit-scrollbar-thumb {
+    background: #ffe4b5;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #ffdf9e;
+}
+
+.session-item.active {
+    background: #fffbe9;
+    border-left: 4px solid #ff9900;
+    box-shadow: 0 2px 8px rgba(255, 153, 0, 0.04);
+}
+
+.diary-main {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f6f1;
+    min-height: 600px;
+}
+.diary-card {
+    width: 600px;
+    min-height: 420px;
+    background: #fcf7ee;
+    border: 2px dashed #e6cfa8;
+    border-radius: 18px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding-bottom: 48px;
+}
+.diary-title {
+    margin-top: 24px;
+    font-size: 26px;
+    font-weight: bold;
+    color: #b97a56;
+    text-align: center;
+}
+.diary-desc {
+    margin: 18px 0 32px 0;
+    font-size: 18px;
+    color: #bfae9a;
+    text-align: center;
+    max-width: 420px;
+}
+.diary-btn {
+    background: #ff9900;
+    color: #fff;
+    border: none;
+    border-radius: 22px;
+    padding: 14px 38px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s;
+    box-shadow: 0 2px 8px rgba(255,153,0,0.06);
+}
+.diary-btn:hover {
+    background: #ffa733;
+}

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>翻书小狗 - 晚安日记</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_chat.css') }}">
+</head>
+<body>
+    <!-- 顶部全局导航条 -->
+    <header class="global-header">
+        <div class="header-left">
+            <!-- Logo图片（需替换为实际logo.png） -->
+            <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="Logo" class="logo-img">
+            <span class="product-name">翻书小狗</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
+        </nav>
+        <div class="header-right">
+            <!-- 个人/设置图标（需替换为实际avatar/setting.png） -->
+            <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="个人中心" class="user-avatar">
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 左侧会话列表 -->
+        <aside class="sidebar">
+            <ul class="session-list" id="session-list">
+                <li class="session-item {% if active_session == 'dog' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="和小狗聊" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">和小狗聊</div>
+                        <div class="session-preview">小狗陪你聊聊心事</div>
+                    </div>
+                </li>
+                <li class="session-item shortcut {% if active_session == 'diary' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_icon.png') }}" alt="晚安日记" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">晚安日记</div>
+                        <div class="session-preview">记录你的心情和故事</div>
+                    </div>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- 右侧主内容区 -->
+        <main class="diary-main">
+            <div class="diary-card">
+                <!-- 顶部图标（请替换为实际的日记/日历/笔记本图片） -->
+                <img src="{{ url_for('static', filename='diary_card_icon.png') }}" alt="日记图标" class="diary-icon" style="width:56px;height:56px;display:block;margin:32px auto 0 auto;">
+                <!-- ↑↑↑ 请放置灰色笔记本/日历图标图片，建议命名为diary_card_icon.png ↑↑↑ -->
+
+                <div class="diary-title">晚安日记</div>
+                <div class="diary-desc">
+                    小狗正在努力整理一个秘密基地，帮你记录每天的心情和故事
+                </div>
+                <button class="diary-btn" id="diary-wait-btn">我期待这个功能！</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+    // 按钮点击收集（可扩展为AJAX上报）
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('diary-wait-btn').onclick = function() {
+            alert('你的期待已收到，小狗会努力开发这个功能！');
+            // TODO: 可在此处发送AJAX到后端收集点击
+        };
+        // 侧边栏切换
+        document.querySelectorAll('.session-item').forEach(function(item, idx) {
+            item.onclick = function() {
+                if(idx === 0) window.location.href = "/main_chat";
+                if(idx === 1) window.location.href = "/diary";
+            }
+        });
+    });
+    </script>
+   
+</body>
+</html>

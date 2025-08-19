@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, Response, stream_with_context, jsonify
-from agent import NewsletterAgent
+from agent import DogAgent
 from langchain_core.messages import AIMessage, HumanMessage
 import markdown
 import os
@@ -217,7 +217,7 @@ def chat_stream():
                 maxiter = session.get('maxiter', 128)
                 
                 # 创建代理实例，并传入历史记录、 maxiter 和 language 参数
-                agent = NewsletterAgent(
+                agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
                     chat_history=chat_history_messages,
@@ -398,6 +398,152 @@ def history_page():
     return render_template('history.html')
 
 
+@app.route('/main_chat')
+def main_chat():
+    try:
+        db = SessionLocal()
+        try:
+            # 检查 Flask session 中是否已有聊天会话ID
+            # chat_session_id = session.get('chat_session_id')
+            
+            # if chat_session_id:
+            #     # 如果有，查询该会话和其所有消息
+            #     chat_session = db.query(ChatSession).filter(ChatSession.id == chat_session_id).first()
+            #     if chat_session:
+            #         # 按时间顺序加载消息
+            #         messages_query = db.query(ChatMessage).filter(ChatMessage.session_id == chat_session_id).order_by(ChatMessage.timestamp.asc()).all()
+            #         # 格式化消息以适应模板
+            #         messages = [{'type': msg.message_type, 'content': msg.content} for msg in messages_query]
+            #     else:
+            #         # 如果session中的ID无效，则创建一个新会话
+            #         chat_session_id = None 
+            
+            # if not chat_session_id:
+            #     # 如果没有会话ID，或ID无效，则创建新会话
+            #     new_session = ChatSession()
+            #     db.add(new_session)
+            #     db.commit()
+            #     db.refresh(new_session)
+            #     session['chat_session_id'] = new_session.id
+            #     messages = [] # 新会话没有历史消息
+
+            # return render_template(
+            #     'main_chat.html',
+            #     active_page='chat',
+            #     active_session='dog',
+            #     messages=messages
+            # )
+            # 1. 查找数据库中最新的会话
+            chat_session = db.query(ChatSession).order_by(ChatSession.start_time.desc()).first()
+            if chat_session:
+                chat_session_id = chat_session.id
+                session['chat_session_id'] = chat_session_id
+                messages_query = db.query(ChatMessage).filter(ChatMessage.session_id == chat_session_id).order_by(ChatMessage.timestamp.asc()).all()
+                messages = [{'type': msg.message_type, 'content': msg.content} for msg in messages_query]
+            else:
+                # 没有历史会话则新建
+                new_session = ChatSession()
+                db.add(new_session)
+                db.commit()
+                db.refresh(new_session)
+                session['chat_session_id'] = new_session.id
+                messages = []
+
+            return render_template(
+                'main_chat.html',
+                active_page='chat',
+                active_session='dog',
+                messages=messages
+            )
+        finally:
+            db.close()
+
+    except Exception as e:
+        return f"加载历史记录时出错: {str(e)}", 500
+   
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    db = SessionLocal()
+    try:
+        # 1. 获取当前会话ID，如果不存在则报错
+        chat_session_id = session.get('chat_session_id')
+        if not chat_session_id:
+            return jsonify({'error': '会话不存在，请刷新页面开始新会话'}), 400
+
+        # 2. 获取用户输入
+        data = request.get_json()
+        user_input = data.get('text', '').strip()
+        if not user_input:
+            return jsonify({'error': '消息不能为空'}), 400
+
+        # 3. 将用户消息存入数据库
+        user_message = ChatMessage(session_id=chat_session_id, message_type='user', content=user_input)
+        db.add(user_message)
+        db.commit()
+
+        # 4. 从数据库加载当前会话的完整历史记录
+        messages_query = db.query(ChatMessage).filter(ChatMessage.session_id == chat_session_id).order_by(ChatMessage.timestamp.asc()).all()
+        chat_history_for_agent = [
+            HumanMessage(content=msg.content) if msg.message_type == 'user' else AIMessage(content=msg.content)
+            for msg in messages_query
+        ]
+
+        # 5. 调用DogAgent获取回复
+        dog_agent = DogAgent(
+            model_provider="ali",
+            model_name="qwen-max",
+            chat_history=chat_history_for_agent,
+            max_iterations=3
+        )
+        # 注意：DogAgent的chat方法需要是同步的，如果它是异步的，需要用asyncio.run()
+        dog_response = dog_agent.chat(user_input)
+
+        # 6. 将AI回复存入数据库
+        ai_message = ChatMessage(session_id=chat_session_id, message_type='dog', content=dog_response)
+        db.add(ai_message)
+        db.commit()
+
+        # 7. 返回AI的回复给前端
+        return jsonify({'reply': dog_response})
+
+    except Exception as e:
+        db.rollback()
+        print(f"API Chat Error: {e}")
+        return jsonify({'error': f'处理消息时发生错误: {e}'}), 500
+    finally:
+        db.close()
+
+# @app.route('/api/chat', methods=['POST'])
+# def api_chat():
+#     data = request.get_json()
+#     user_input = data.get('text', '').strip()
+#     if not user_input:
+#         return jsonify({'error': '消息不能为空'}), 400
+
+#     # 这里可以用 session 或数据库管理 chat_history
+#     chat_history = session.get('chat_history', [])
+#     dog_agent = DogAgent(
+#         model_provider="ali",
+#         model_name="qwen-max",
+#         chat_history=chat_history,
+#         max_iterations=3
+#     )
+#     dog_response = dog_agent.chat(user_input)
+#     # 更新历史
+#     chat_history.append({"role": "user", "content": user_input})
+#     chat_history.append({"role": "assistant", "content": dog_response})
+#     session['chat_history'] = chat_history
+
+#     return jsonify({'reply': dog_response})
+
+@app.route('/diary')
+def diary():
+    return render_template(
+        'diary.html',
+        active_page='chat',         # 保持顶部导航高亮在“聊天”
+        active_session='diary'      # 侧边栏高亮“晚安日记”
+    )
 # 启动应用的入口
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
