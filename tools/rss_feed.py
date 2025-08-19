@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from langchain.tools import tool
 import feedparser
 import os
+import requests
 
 # 加载 .env 文件中的环境变量
 load_dotenv()
@@ -21,12 +22,26 @@ class RSSFeedTool:
             return "RSS订阅源URL不能为空。"
 
         try:
-            # 解析RSS订阅源
-            feed = feedparser.parse(feed_url)
+            # 先用requests获取内容，处理编码问题
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(feed_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            # 使用feedparser解析响应内容
+            feed = feedparser.parse(response.content)
             
             # 检查是否解析成功
             if feed.bozo and isinstance(feed.bozo_exception, Exception):
-                return f"解析RSS订阅源时出错: {feed.bozo_exception}"
+                # 如果有编码问题，尝试使用不同的编码
+                try:
+                    feed = feedparser.parse(response.content.decode('utf-8'))
+                except:
+                    try:
+                        feed = feedparser.parse(response.content.decode('gbk'))
+                    except:
+                        return f"解析RSS订阅源时出错: {feed.bozo_exception}"
             
             # 检查是否有条目
             if not feed.entries:
@@ -47,6 +62,8 @@ class RSSFeedTool:
                 
             return result
             
+        except requests.RequestException as e:
+            return f"获取RSS订阅源时网络请求出错: {e}"
         except Exception as e:
             return f"获取RSS订阅源内容时出错: {e}"
 

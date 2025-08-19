@@ -153,6 +153,9 @@ def get_memory_context(user_id, db_session, flask_session):
     # 获取短期记忆（最近10轮对话）
     short_term_memory = flask_session.get('short_term_memory', deque(maxlen=10))
     
+    # 添加调试信息
+    print(f"DEBUG: 从Flask会话中获取的短期记忆: {list(short_term_memory)}")
+
     # 获取长期记忆
     long_term_memory = db_session.query(LongTermMemory).filter_by(user_id=user_id).first()
     
@@ -263,6 +266,9 @@ def chat_stream():
             short_term_memory = session.get('short_term_memory', deque(maxlen=10))
             short_term_memory.append({'type': 'human', 'content': user_input})
             session['short_term_memory'] = short_term_memory
+            
+            # 添加调试信息
+            print(f"DEBUG: 保存用户消息后的短期记忆: {list(short_term_memory)}")
 
             # 获取记忆上下文（现在包含了刚添加的用户消息）
             memory_context = get_memory_context(user_id, db_session, session)
@@ -288,6 +294,17 @@ def chat_stream():
             print(f"DEBUG: 构建的chat_history_messages数量: {len(chat_history_messages)}")
             for i, msg in enumerate(chat_history_messages):
                 print(f"DEBUG: chat_history_messages[{i}] = {type(msg).__name__}: {msg.content[:50]}...")
+                
+            # 额外调试信息 - 检查短期记忆是否正确传递
+            print(f"DEBUG: 短期记忆内容: {list(short_term_memory)}")
+            print(f"DEBUG: chat_history_messages内容: {chat_history_messages}")
+            
+            # 额外验证 - 确保chat_history_messages不是空的
+            if not chat_history_messages:
+                print("WARNING: chat_history_messages为空!")
+            
+            # 确保短期记忆被正确保存到session中
+            session['short_term_memory'] = short_term_memory
 
             try:
                 model_provider = session.get('model_provider', 'deepseek')
@@ -298,11 +315,15 @@ def chat_stream():
                 callback_queue = queue.Queue()
                 callback_handler = StreamCallbackHandler(callback_queue)
                 
+                # 添加调试信息
+                print(f"DEBUG: 传递给Agent的chat_history_messages: {chat_history_messages}")
+                print(f"DEBUG: 传递给Agent的memory_context: {memory_context}")
+                
                 # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
-                    chat_history=chat_history_messages,
+                    chat_history=list(chat_history_messages),  # 确保传递的是列表而不是生成器
                     max_iterations=maxiter,
                     language=language,
                     memory_context=memory_context,

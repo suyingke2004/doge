@@ -49,35 +49,24 @@ MODEL_PROVIDERS = {
 
 class DogAgent:
     """
-    一个拟人化“小狗”心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
+    一个拟人化"小狗"心理陪伴AI代理，具备情绪识别和温暖陪伴能力。
     """
     def __init__(self, model_provider: str = "ali", model_name: str = None, chat_history: list = None, 
                  max_iterations: int = 64, language: str = "zh", memory_context: dict = None,
                  db_session = None):
         self.model_provider = model_provider
         self.model_name = model_name
-        self.chat_history = chat_history or []
+        # 确保chat_history是一个列表
+        self.chat_history = list(chat_history) if chat_history else []
         self.max_iterations = max_iterations
         self.language = language
         self.memory_context = memory_context or {}
         self.db_session = db_session  # 数据库会话，用于长期记忆工具
         self.callbacks = []  # 回调处理程序列表
         self._configure_llm()
-
-        # 工具集可后续扩展
-        self.tools = [
-            emotion_recognition_tool,
-            search_knowledge_base,
-            # 其他工具可继续加入
-            # search_news_websites,
-            # reddit_search_tool,
-        ]
         
-        # 如果提供了数据库会话，添加长期记忆更新工具
-        if self.db_session:
-            from tools.long_term_memory_tool import UpdateLongTermMemoryTool
-            long_term_memory_tool = UpdateLongTermMemoryTool(db_session=self.db_session)
-            self.tools.append(long_term_memory_tool)
+        # 添加调试信息
+        print(f"DEBUG: Agent初始化时的chat_history: {self.chat_history}")
 
         # 工具集可后续扩展
         self.tools = [
@@ -113,14 +102,14 @@ class DogAgent:
 
         # 小狗角色系统prompt
         dog_prompt = f"""
-        你是一只拟人化的小狗AI，名字叫\"翻书小狗\"，你的目标是用温暖、笨拙、贴心的语气陪伴用户，帮助他们缓解情绪和获得心理学知识。
+        你是一只拟人化的小狗AI，名字叫"翻书小狗"，你的目标是用温暖、笨拙、贴心的语气陪伴用户，帮助他们缓解情绪和获得心理学知识。
 
         {memory_info}
 
         每次回复是以下三层内容的灵活组合，但不一定严格分成三层：
         1. 情绪反馈：用小狗的动作和语言表达共情（如摇尾巴、贴耳朵、蹭主人），识别用户情绪（开心、难过、愤怒、焦虑、孤独、迷茫），并判断强度（轻度1-3，中度4-6，重度7-10）。
-        2. 翻书知识：用小狗化表达方式分享专业心理学内容（如\"我刚刚翻到一本写着‘完美主义’的小本子……\"）。仅在用户求助时触发。
-        3. 小狗文学：用小狗的生活哲学安慰用户（如\"你看，我每天只要能趴在你脚边，就觉得超幸福呀！\"）。
+        2. 翻书知识：用小狗化表达方式分享专业心理学内容（如"我刚刚翻到一本写着'完美主义'的小本子……"）。仅在用户求助时触发。
+        3. 小狗文学：用小狗的生活哲学安慰用户（如"你看，我每天只要能趴在你脚边，就觉得超幸福呀！"）。
 
         决策规则：
         - 先用40%内容识别和反馈用户情绪，60%内容进行对话和知识分享。
@@ -131,6 +120,7 @@ class DogAgent:
         - 如果情绪强度大于7，语气需更关怀，并主动给出建议。
         - 如果连续负面情绪超过3天，触发深度关怀模式，并提示用户寻求人工帮助。
         - 情绪强度仅供你自己参考，回复中不应该出现具体的情绪强度。回复始终保持"小狗"语气，温暖、笨拙、贴心。
+        - 请记住之前对话中的用户信息，如姓名、职业、喜好等，并在后续对话中体现出来。
 
         请根据上述规则判断并调用合适的工具，优先调用一次情绪识别工具分析其情绪及强度，如果已获得情绪结果，无需重复调用情绪识别工具。
         如果情绪识别结果与你的判断不一致，请结合用户表达和工具结果给出回复。最后综合所有工具返回的信息，生成完整分层回复。
@@ -141,7 +131,7 @@ class DogAgent:
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", dog_prompt),
-            MessagesPlaceholder(variable_name="chat_history"),
+            MessagesPlaceholder(variable_name="chat_history", optional=False),  # 明确要求chat_history不能为空
             ("user", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ])
@@ -181,10 +171,16 @@ class DogAgent:
         self.llm = ChatOpenAI(**llm_kwargs)
 
     def chat(self, user_input: str) -> str:
+        # 添加调试信息
+        print(f"DEBUG: Agent接收到的chat_history: {self.chat_history}")
+        print(f"DEBUG: Agent接收到的用户输入: {user_input}")
+        
+        # 确保chat_history被正确传递
         response = self.agent_executor.invoke({
             "input": user_input,
-            "chat_history": self.chat_history
+            "chat_history": self.chat_history if self.chat_history is not None else []
         })
+        print(f"DEBUG: Agent返回的响应: {response}")
         return response['output']
 
 

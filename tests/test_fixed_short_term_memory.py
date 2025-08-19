@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-测试Flask会话中的短期记忆存储和检索
+修复短期记忆功能的测试脚本
 """
 
 import requests
 import time
 import json
 
-def test_flask_session_short_term_memory():
-    """测试Flask会话中的短期记忆"""
+def test_fixed_short_term_memory():
+    """测试修复后的短期记忆功能"""
     print("=" * 60)
-    print("测试Flask会话中的短期记忆")
+    print("测试修复后的短期记忆功能")
     print("=" * 60)
     
     # 创建会话
@@ -23,7 +23,7 @@ def test_flask_session_short_term_memory():
     
     # 发送第一条消息
     data1 = {
-        'topic': '我叫小红，我最喜欢的颜色是红色',
+        'topic': '我叫小华，我最喜欢的颜色是绿色',
         'model_provider': 'deepseek',
         'model_name': 'deepseek-chat',
         'maxiter': '128',
@@ -77,8 +77,8 @@ def test_flask_session_short_term_memory():
     print(f"   AI回复: {content2[:300]}...")
     
     # 验证是否包含关键信息
-    has_name = "小红" in content2
-    has_color = "红色" in content2
+    has_name = "小华" in content2
+    has_color = "绿色" in content2
     
     print("\n" + "=" * 60)
     print("测试结果")
@@ -87,12 +87,17 @@ def test_flask_session_short_term_memory():
     print(f"记住颜色: {'✓' if has_color else '✗'}")
     
     if has_name and has_color:
-        print("\n🎉 Flask会话中的短期记忆功能测试通过！")
+        print("\n🎉 修复后的短期记忆功能测试通过！")
         return True
     else:
-        print("\n⚠️  Flask会话中的短期记忆功能测试未通过！")
+        print("\n⚠️  修复后的短期记忆功能测试未通过！")
+        # 提供调试信息
+        print("\n调试信息:")
+        print("- 确保服务器正确传递短期记忆给Agent")
+        print("- 检查Agent是否正确使用chat_history参数")
+        print("- 验证Flask会话中短期记忆是否正确存储和检索")
         return False
 
 if __name__ == "__main__":
-    success = test_flask_session_short_term_memory()
+    success = test_fixed_short_term_memory()
     exit(0 if success else 1)

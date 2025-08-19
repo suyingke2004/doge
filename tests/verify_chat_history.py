@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""
-测试Flask会话中的短期记忆存储和检索
+"""验证chat_history传递的测试脚本
 """
 
 import requests
 import time
 import json
 
-def test_flask_session_short_term_memory():
-    """测试Flask会话中的短期记忆"""
+def verify_chat_history_passing():
+    """验证chat_history是否被正确传递"""
     print("=" * 60)
-    print("测试Flask会话中的短期记忆")
+    print("验证chat_history传递")
     print("=" * 60)
     
     # 创建会话
@@ -23,14 +22,14 @@ def test_flask_session_short_term_memory():
     
     # 发送第一条消息
     data1 = {
-        'topic': '我叫小红，我最喜欢的颜色是红色',
+        'topic': '我的名字是小张，我喜欢编程',
         'model_provider': 'deepseek',
         'model_name': 'deepseek-chat',
         'maxiter': '128',
         'language': 'zh'
     }
     
-    print("\n2. 发送包含姓名和颜色的消息...")
+    print("\n2. 发送包含姓名和爱好的消息...")
     response1 = session.post("http://localhost:5001/chat_stream", data=data1)
     
     # 收集第一条响应内容
@@ -50,9 +49,9 @@ def test_flask_session_short_term_memory():
     # 等待一段时间确保处理完成
     time.sleep(3)
     
-    # 发送第二条消息验证记忆
+    # 发送第二条消息，明确要求AI重复用户的信息
     data2 = {
-        'topic': '还记得我刚才告诉你我的名字和最喜欢的颜色吗？',
+        'topic': '请重复一遍我刚才告诉你的关于我的信息',
         'model_provider': 'deepseek',
         'model_name': 'deepseek-chat',
         'maxiter': '128',
@@ -77,22 +76,27 @@ def test_flask_session_short_term_memory():
     print(f"   AI回复: {content2[:300]}...")
     
     # 验证是否包含关键信息
-    has_name = "小红" in content2
-    has_color = "红色" in content2
+    has_name = "小张" in content2
+    has_hobby = "编程" in content2
     
     print("\n" + "=" * 60)
     print("测试结果")
     print("=" * 60)
     print(f"记住姓名: {'✓' if has_name else '✗'}")
-    print(f"记住颜色: {'✓' if has_color else '✗'}")
+    print(f"记住爱好: {'✓' if has_hobby else '✗'}")
     
-    if has_name and has_color:
-        print("\n🎉 Flask会话中的短期记忆功能测试通过！")
+    if has_name and has_hobby:
+        print("\n🎉 chat_history传递测试通过！")
         return True
     else:
-        print("\n⚠️  Flask会话中的短期记忆功能测试未通过！")
+        print("\n⚠️  chat_history传递测试未通过！")
+        # 提供调试信息
+        print("\n调试信息:")
+        print("- 检查服务器端是否正确传递chat_history给Agent")
+        print("- 验证Agent是否正确使用chat_history参数")
+        print("- 确认提示模板中chat_history占位符是否正确配置")
         return False
 
 if __name__ == "__main__":
-    success = test_flask_session_short_term_memory()
+    success = verify_chat_history_passing()
     exit(0 if success else 1)
