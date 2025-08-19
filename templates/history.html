@@ -116,6 +116,18 @@
                     const historyItem = document.createElement('div');
                     historyItem.className = 'history-item';
                     
+                    // 创建会话标题链接
+                    const titleLink = document.createElement('a');
+                    titleLink.href = `/history/${item.id}`;
+                    titleLink.style.textDecoration = 'none';
+                    titleLink.style.color = 'inherit';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'user-input';
+                    // 截取标题的前50个字符
+                    const titleText = item.title.length > 50 ? item.title.substring(0, 50) + '...' : item.title;
+                    title.textContent = titleText;
+                    
                     const userInput = document.createElement('div');
                     userInput.className = 'user-input';
                     // 截取用户输入的前50个字符
@@ -130,8 +142,10 @@
                     
                     const timestamp = document.createElement('div');
                     timestamp.className = 'timestamp';
-                    timestamp.textContent = new Date(item.timestamp).toLocaleString();
+                    timestamp.textContent = new Date(item.start_time).toLocaleString();
                     
+                    titleLink.appendChild(title);
+                    historyItem.appendChild(titleLink);
                     historyItem.appendChild(userInput);
                     historyItem.appendChild(agentResponse);
                     historyItem.appendChild(timestamp);

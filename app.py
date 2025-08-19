@@ -113,7 +113,10 @@ def debug_status():
     """状态指示器调试页面"""
     return render_template('debug_status.html')
 
-# 3.8 定义PDF下载路由
+
+
+
+# 3.9 定义PDF下载路由
 @app.route('/download/<filename>')
 def download_pdf(filename):
     """提供PDF文件下载"""
@@ -144,21 +147,25 @@ def download_pdf(filename):
     except Exception as e:
         return f"下载文件时出错: {str(e)}", 500
 
-def get_memory_context(user_id, db_session, flask_session):
+def get_memory_context(user_id, db_session, session_id):
     """
     获取用户的短期和长期记忆上下文
     :param user_id: 用户ID
     :param db_session: 数据库会话
-    :param flask_session: Flask session对象
+    :param session_id: 当前的会话ID
     :return: 包含短期和长期记忆的上下文字典
     """
-    # 获取短期记忆（最近10轮对话）
-    short_term_memory = flask_session.get('short_term_memory', [])
+    # --- 新逻辑：从数据库获取短期记忆 ---
+    recent_messages = db_session.query(ChatMessage).filter_by(session_id=session_id).order_by(desc(ChatMessage.timestamp)).limit(10).all()
+    # 将结果反转，使其按时间正序排列
+    recent_messages.reverse()
     
-    # 添加调试信息
-    print(f"DEBUG: 从Flask会话中获取的短期记忆: {list(short_term_memory)}")
+    # 转换为与之前兼容的字典格式
+    short_term_memory = [{'type': msg.message_type, 'content': msg.content} for msg in recent_messages]
+    
+    print(f"DEBUG: 从数据库获取的短期记忆条数: {len(short_term_memory)}")
 
-    # 获取长期记忆
+    # 获取长期记忆 (这部分逻辑不变)
     long_term_memory = db_session.query(LongTermMemory).filter_by(user_id=user_id).first()
     
     # 打印调试信息
@@ -171,7 +178,7 @@ def get_memory_context(user_id, db_session, flask_session):
         print("未找到长期记忆记录")
     
     return {
-        'short_term': list(short_term_memory),
+        'short_term': short_term_memory, # short_term_memory已经是list of dicts
         'long_term': {
             'profile_summary': long_term_memory.profile_summary if long_term_memory else '',
             'emotion_trends': long_term_memory.emotion_trends if long_term_memory else {},
@@ -212,226 +219,88 @@ def chat_stream():
             # 从表单获取用户输入
             user_input = request.form.get('topic')
             
-            # 打印调试信息
             print(f"Received form data: {dict(request.form)}")
             print(f"user_input: '{user_input}'")
             
-            # 如果是新对话，获取模型选择、语言和 maxiter 参数并存入 session
-            # 对于已存在的对话，从 session 中获取模型选择和语言
+            # 模型和语言参数管理
             if 'chat_history' not in session:
                 model_provider = request.form.get('model_provider', 'deepseek')
-                model_name = request.form.get('model_name', '').strip()
-                # 如果没有提供模型名称，则使用空字符串表示使用默认模型
-                model_name = model_name if model_name else None
-                # 获取 maxiter 参数，默认为 128
+                model_name = request.form.get('model_name', '').strip() or None
                 maxiter = int(request.form.get('maxiter', 128))
-                # 获取语言参数，默认为中文
                 language = request.form.get('language', 'zh')
-                
                 session['model_provider'] = model_provider
                 session['model_name'] = model_name
                 session['maxiter'] = maxiter
                 session['language'] = language
-                
-                # 初始化短期记忆
-                session['short_term_memory'] = []
             else:
                 model_provider = session.get('model_provider', 'deepseek')
                 model_name = session.get('model_name', None)
                 maxiter = session.get('maxiter', 128)
                 language = session.get('language', 'zh')
 
-            # 更宽松的输入验证 - 只有当输入为 None 时才报错
-            if user_input is None:
-                yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
-                return
-                
-            # 如果输入是空字符串，也认为是无效输入
-            if not user_input.strip():
-                yield "{\"type\": \"output\", \"content\": \"错误: 请输入一个主题或问题.\"}\n"
+            # 输入验证
+            if user_input is None or not user_input.strip():
+                yield json.dumps({"type": "output", "content": "错误: 请输入一个主题或问题."}, ensure_ascii=False) + "\n"
                 return
 
-            # 获取或创建会话ID和ChatSession对象
+            # --- 核心逻辑重构 ---
+
+            # 1. 获取或创建会话ID
             session_id = session.get('session_id')
             if not session_id:
-                # 创建新的ChatSession
-                new_session = ChatSession(title=user_input[:100])  # 使用前100个字符作为标题
-                db_session.add(new_session)
+                new_session_db = ChatSession(title=user_input[:100])
+                db_session.add(new_session_db)
                 db_session.commit()
-                session_id = new_session.id
+                session_id = new_session_db.id
                 session['session_id'] = session_id
-
-            # 获取用户ID（这里简化处理，实际项目中可能需要更复杂的用户认证）
-            user_id = session_id  # 使用会话ID作为用户ID的简化处理
-
-            # 保存用户消息到短期记忆
-            short_term_memory = session.get('short_term_memory', [])
-            short_term_memory.append({'type': 'human', 'content': user_input})
-            session['short_term_memory'] = short_term_memory
-            session.modified = True
             
-            # 添加调试信息
-            print(f"DEBUG: 保存用户消息后的短期记忆: {list(short_term_memory)}")
+            user_id = session_id  # 简化处理
 
-            # 获取记忆上下文（现在包含了刚添加的用户消息）
-            memory_context = get_memory_context(user_id, db_session, session)
-            
-            # 打印调试信息
-            print(f"传递给Agent的记忆上下文: {memory_context}")
-
-            # 保存用户消息到数据库
+            # 2. 将当前用户消息存入数据库
             user_message = ChatMessage(session_id=session_id, message_type='human', content=user_input)
             db_session.add(user_message)
             db_session.commit()
 
-            # 将原始字典列表转换为 LangChain 消息对象列表
-            # 直接使用从session获取的短期记忆构建chat_history_messages
+            # 3. 从数据库获取包含当前消息的记忆上下文
+            memory_context = get_memory_context(user_id, db_session, session_id)
+            
+            # 4. 从记忆上下文构建LangChain消息列表
             chat_history_messages = []
-            for msg in short_term_memory:
+            for msg in memory_context['short_term']:
                 if msg['type'] == 'human':
                     chat_history_messages.append(HumanMessage(content=msg['content']))
                 else:
                     chat_history_messages.append(AIMessage(content=msg['content']))
             
-            # 添加调试信息
             print(f"DEBUG: 构建的chat_history_messages数量: {len(chat_history_messages)}")
-            for i, msg in enumerate(chat_history_messages):
-                print(f"DEBUG: chat_history_messages[{i}] = {type(msg).__name__}: {msg.content[:50]}...")
-                
-            # 额外调试信息 - 检查短期记忆是否正确传递
-            print(f"DEBUG: 短期记忆内容: {list(short_term_memory)}")
-            print(f"DEBUG: chat_history_messages内容: {chat_history_messages}")
-            
-            # 额外验证 - 确保chat_history_messages不是空的
-            if not chat_history_messages:
-                print("WARNING: chat_history_messages为空!")
-            
-            # 确保短期记忆被正确保存到session中
-            session['short_term_memory'] = short_term_memory
 
             try:
-                model_provider = session.get('model_provider', 'deepseek')
-                model_name = session.get('model_name', None)
-                maxiter = session.get('maxiter', 128)
-                
-                # 创建回调队列和处理程序
-                callback_queue = queue.Queue()
-                callback_handler = StreamCallbackHandler(callback_queue)
-                
-                # 添加调试信息
-                print(f"DEBUG: 传递给Agent的chat_history_messages: {chat_history_messages}")
-                print(f"DEBUG: 传递给Agent的memory_context: {memory_context}")
-                
-                # 创建代理实例，并传入历史记录、 maxiter、language、memory_context 和 db_session 参数
+                # 5. 创建并调用Agent
                 agent = DogAgent(
                     model_provider=model_provider, 
                     model_name=model_name, 
-                    chat_history=list(chat_history_messages),  # 确保传递的是列表而不是生成器
+                    chat_history=chat_history_messages,
                     max_iterations=maxiter,
                     language=language,
                     memory_context=memory_context,
                     db_session=db_session
                 )
-                
-                # 为agent_executor添加回调处理程序
-                agent.agent_executor.callbacks = [callback_handler]
-                
-                # 使用流式方式调用代理生成内容
-                full_response = ""
-                
-                # 使用 asyncio.run 来处理异步代码（推荐方法）
-                import asyncio
-                
-                # 定义一个异步生成器函数
-                async def async_generate():
-                    nonlocal full_response
-                    # 使用同步方法并模拟流式响应
-                    try:
-                        response = agent.chat(user_input)
-                        full_response = response
-                        # 模拟流式响应，一次性发送完整响应
-                        yield {"type": "output", "content": response}
-                    except Exception as e:
-                        yield {"type": "output", "content": f"生成内容时发生错误: {str(e)}"}
-                
-                # 在新事件循环中运行异步代码
-                async def run_async_code():
-                    async for item in async_generate():
-                        yield json.dumps(item, ensure_ascii=False) + "\n"
-                        
-                # 同步包装异步生成器
-                import threading
-                from queue import Queue, Empty
-                
-                # 创建队列用于传递数据
-                q = Queue()
-                
-                # 定义在后台线程中运行的函数
-                def run_async_generator():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    try:
-                        async_gen = run_async_code()
-                        while True:
-                            try:
-                                item = loop.run_until_complete(async_gen.__anext__())
-                                q.put(item)
-                            except StopAsyncIteration:
-                                break
-                    except Exception as e:
-                        q.put(e)
-                    finally:
-                        q.put(None)  # 信号表示完成
-                        loop.close()
-                
-                # 启动后台线程
-                thread = threading.Thread(target=run_async_generator)
-                thread.start()
-                
-                # 从队列中获取数据并发送给客户端
-                while True:
-                    try:
-                        # 检查回调队列中是否有状态信息
-                        try:
-                            while True:
-                                status_item = callback_queue.get_nowait()
-                                yield json.dumps(status_item, ensure_ascii=False) + "\n"
-                        except queue.Empty:
-                            pass
-                        
-                        # 检查主队列中的数据
-                        item = q.get(timeout=1)  # 1秒超时
-                        if item is None:  # 完成信号
-                            break
-                        if isinstance(item, Exception):
-                            raise item
-                        yield item
-                    except Empty:
-                        # 检查线程是否还活着
-                        if not thread.is_alive():
-                            break
-                        continue
-                
-                thread.join()
+                full_response = agent.chat(user_input)
 
-                # 保存AI消息到短期记忆
-                short_term_memory = session.get('short_term_memory', [])
-                short_term_memory.append({'type': 'ai', 'content': full_response})
-                # 确保短期记忆不超过10条
-                session['short_term_memory'] = short_term_memory[-10:]
-                session.modified = True
-
-                # 保存AI消息到数据库
+                # 6. 将AI响应存入数据库
                 ai_message = ChatMessage(session_id=session_id, message_type='ai', content=full_response)
                 db_session.add(ai_message)
                 db_session.commit()
 
-                # 更新会话中的聊天历史（用于前端显示）
+                # 7. 更新用于前端渲染的session变量 (这部分可以保留)
                 chat_history_raw = session.get('chat_history', [])
                 chat_history_raw.append({'type': 'human', 'content': user_input})
                 chat_history_raw.append({'type': 'ai', 'content': full_response})
                 session['chat_history'] = chat_history_raw
                 session.modified = True
+                
+                # 8. 返回完整响应
+                yield json.dumps({"type": "output", "content": full_response}, ensure_ascii=False) + "\n"
 
             except Exception as e:
                 print(f"生成内容时出错: {e}")
@@ -457,27 +326,27 @@ def get_history():
             # 转换为JSON格式
             history_data = []
             for session in sessions:
+                # 获取该会话的第一条用户消息和AI响应
+                first_human_message = db_session.query(ChatMessage).filter_by(
+                    session_id=session.id, message_type='human'
+                ).order_by(ChatMessage.timestamp).first()
+                
+                first_ai_message = db_session.query(ChatMessage).filter_by(
+                    session_id=session.id, message_type='ai'
+                ).order_by(ChatMessage.timestamp).first()
+                
                 history_data.append({
                     'id': session.id,
                     'title': session.title or f"会话于 {session.start_time.strftime('%Y-%m-%d %H:%M')}",
-                    'start_time': session.start_time.isoformat()
+                    'start_time': session.start_time.isoformat(),
+                    'user_input': first_human_message.content if first_human_message else "",
+                    'agent_response': first_ai_message.content if first_ai_message else ""
                 })
             
             return jsonify(history_data)
         finally:
             db_session.close()
             
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-        history_data = []
-        for session in sessions:
-            history_data.append({
-                'id': session.id,
-                'title': session.title or f"会话于 {session.start_time.strftime('%Y-%m-%d %H:%M')}",
-                'start_time': session.start_time.isoformat()
-            })
-        
-        return jsonify(history_data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
