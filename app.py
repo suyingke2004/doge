@@ -77,6 +77,7 @@ def new_chat():
     session.pop('model_provider', None)
     session.pop('model_name', None)
     session.pop('maxiter', None)
+    session.pop('session_id', None)  # 确保创建新的数据库会话
     return redirect(url_for('chat_stream'))
 
 # 3.5 定义调试聊天路由
