@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻书小狗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        // 配置Tailwind自定义颜色和字体
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#E67E22', // 主色调：橙色
+                        secondary: '#F8F5E6', // 辅助色：米白色
+                        accent: '#F39C12', // 强调色：深橙色
+                        text: '#66503A', // 文本色：棕色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer;
+            }
+            .nav-item {
+                @apply text-text hover:text-primary transition-colors duration-200 cursor-pointer;
+            }
+            .btn-exit {
+                @apply bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-6 rounded-full transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-400;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_chat.css') }}">
+</head>
+<body class="bg-secondary min-h-screen">
+    <!-- 顶部全局导航条 -->
+    <header class="global-header">
+        <div class="header-left">
+            <!-- Logo图片（需替换为实际logo.png） -->
+             
+            <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="Logo" class="logo-img">
+            <span class="product-name">翻书小狗</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
+        </nav>
+        <div class="header-right">
+            <!-- 个人/设置图标（需替换为实际avatar/setting.png） -->
+            <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="个人中心" class="user-avatar">
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 头部横幅 -->
+        <div class="bg-primary rounded-2xl p-8 md:p-12 text-center text-white mb-10 shadow-md">
+            <div class="inline-block bg-white/20 rounded-full p-4 mb-4 cursor-pointer" id="avatar">
+                <i class="fa fa-user-circle-o text-4xl"></i>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-bold mb-2">心灵伙伴</h2>
+            <p class="text-white/90">与翻书小狗的美好时光</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-2 gap-6 mb-16">
+            <!-- 相伴天数 -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm card-hover">
+                <p class="text-text/70 mb-2">相伴天数</p>
+                <p class="text-3xl font-bold text-primary">7</p>
+            </div>
+            
+            <!-- 聊天次数 -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm card-hover">
+                <p class="text-text/70 mb-2">聊天次数</p>
+                <p class="text-3xl font-bold text-primary">23</p>
+            </div>
+            
+            <!-- 小狗回复 -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm card-hover" id="dog-replies">
+                <p class="text-text/70 mb-2">小狗回复</p>
+                <p class="text-3xl font-bold text-primary">156</p>
+            </div>
+            
+            <!-- 翻书次数 -->
+            <div class="bg-white rounded-xl p-6 text-center shadow-sm card-hover" id="book-flips">
+                <p class="text-text/70 mb-2">翻书次数</p>
+                <p class="text-3xl font-bold text-primary">5</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // 为可点击元素添加交互效果和事件
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 头像点击事件
+            document.getElementById('avatar').addEventListener('click', function() {
+                alert('头像被点击');
+            });
+            
+            // 小狗回复点击事件
+            document.getElementById('dog-replies').addEventListener('click', function() {
+                alert('小狗回复被点击');
+            });
+            
+            // 翻书次数点击事件
+            document.getElementById('book-flips').addEventListener('click', function() {
+                alert('翻书次数被点击');
+            });
+            
+        });
+    </script>
+</body>
+</html>
