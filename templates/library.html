@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>翻书小狗 - 小狗图书馆</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main_chat.css') }}">
+    <style>
+    /* 右侧主内容区样式 */
+    .main-content {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .library-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .library-header img {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 8px;
+    }
+
+    .library-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .library-desc {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .progress-section {
+      background-color: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .progress-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #ff9e7d;
+      width: 65%; /* 对应65%进度 */
+    }
+
+    .progress-text {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .bookshelf-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .bookshelf {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 24px;
+    }
+
+    /* 书籍样式 - 更像书的形状 */
+    .book-item {
+      height: 180px;
+      position: relative;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.3s ease;
+    }
+    
+    .book-item:hover {
+      transform: translateY(-5px) rotateX(5deg);
+    }
+    
+    /* 书脊 */
+    .book-spine {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 20px;
+      height: 100%;
+      border-radius: 4px 0 0 4px;
+      z-index: 2;
+    }
+    
+    /* 封面 */
+    .book-cover {
+      position: absolute;
+      left: 20px;
+      top: 0;
+      width: calc(100% - 20px);
+      height: 100%;
+      border-radius: 0 6px 6px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      box-shadow: 3px 3px 10px rgba(0,0,0,0.15);
+      z-index: 1;
+    }
+    
+    /* 不同书籍的颜色 */
+    .book-1 .book-spine { background-color: #6b46c1; }
+    .book-1 .book-cover { background-color: #805ad5; }
+    
+    .book-2 .book-spine { background-color: #e53e3e; }
+    .book-2 .book-cover { background-color: #f56565; }
+    
+    .book-3 .book-spine { background-color: #3182ce; }
+    .book-3 .book-cover { background-color: #4299e1; }
+    
+    .book-4 .book-spine { background-color: #d69e2e; }
+    .book-4 .book-cover { background-color: #ecc94b; }
+    
+    .book-5 .book-spine { background-color: #38a169; }
+    .book-5 .book-cover { background-color: #48bb78; }
+    
+    .book-6 .book-spine { background-color: #805ad5; }
+    .book-6 .book-cover { 
+      background-color: #9f7aea; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .book-name {
+      font-size: 14px;
+      text-align: center;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    
+    .add-icon {
+      font-size: 32px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+    <!-- 顶部全局导航条 -->
+    <header class="global-header">
+        <div class="header-left">
+            <!-- Logo图片（需替换为实际logo.png） -->
+            <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="Logo" class="logo-img">
+            <span class="product-name">翻书小狗</span>
+        </div>
+        <nav class="header-nav">
+            <a href="/login" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/main_chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
+          </nav>
+        <div class="header-right">
+            <!-- 个人/设置图标（需替换为实际avatar/setting.png） -->
+            <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="个人中心" class="user-avatar">
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 左侧会话列表 -->
+        <aside class="sidebar">
+            <ul class="session-list" id="session-list">
+                <li class="session-item {% if active_session == 'dog' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="和小狗聊" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">和小狗聊</div>
+                        <div class="session-preview">小狗陪你聊聊心事</div>
+                    </div>
+                </li>
+                <li class="session-item shortcut {% if active_session == 'diary' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_icon.png') }}" alt="晚安日记" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">晚安日记</div>
+                        <div class="session-preview">记录你的心情和故事</div>
+                    </div>
+                </li>
+                <li class="session-item shortcut {% if active_session == 'library' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_card_icon.png') }}" alt="晚安日记" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">小狗图书馆</div>
+                        <div class="session-preview">每本书都是小狗成长的养分</div>
+                    </div>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- 右侧主内容区 -->
+    <div class="main-content" id="main-content">
+      <div class="library-header">
+        <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="小狗图书馆图标">
+        <div class="library-title">小狗的知识宝库</div>
+        <div class="library-desc">每本书都是小狗成长的养分~</div>
+      </div>
+      <div class="progress-section">
+        <div class="progress-title">本周阅读进度</div>
+        <div class="progress-bar">
+          <div class="progress"></div>
+        </div>
+        <div class="progress-text">小狗已经啃了3本书的65%～</div>
+      </div>
+      <div>
+        <div class="bookshelf-title">我的书架</div>
+        <div class="bookshelf">
+          <div class="book-item book-1" onclick="handleBookClick('情绪管理小妙招')">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="book-name">情绪管理小妙招</div>
+            </div>
+          </div>
+          <div class="book-item book-2" onclick="handleBookClick('焦虑自救指南')">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="book-name">焦虑自救指南</div>
+            </div>
+          </div>
+          <div class="book-item book-3" onclick="handleBookClick('心理学入门')">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="book-name">心理学入门</div>
+            </div>
+          </div>
+          <div class="book-item book-4" onclick="handleBookClick('正念冥想练习')">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="book-name">正念冥想练习</div>
+            </div>
+          </div>
+          <div class="book-item book-5" onclick="handleBookClick('人际关系心理学')">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="book-name">人际关系心理学</div>
+            </div>
+          </div>
+          <div class="book-item book-6" onclick="handleAddBookClick()">
+            <div class="book-spine"></div>
+            <div class="book-cover">
+              <div class="add-icon">+</div>
+              <div class="book-name">添加新书</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.session-item').forEach(function(item, idx) {
+            item.onclick = function() {
+                if(idx === 0) window.location.href = "/main_chat";
+                if(idx === 1) window.location.href = "/diary";
+                if(idx === 2) window.location.href = "/library";
+            }
+        });
+    });
+    // 书籍点击事件
+    function handleBookClick(bookName) {
+      alert(`你点击了《${bookName}》，可在这里扩展打开书籍详情等逻辑`);
+    }
+
+    // 添加新书点击事件
+    function handleAddBookClick() {
+      alert('点击了添加新书，可在这里实现调用接口添加书籍等逻辑');
+    }
+  </script>
+</body>
+
+</html>

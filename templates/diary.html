@@ -5,22 +5,195 @@
     <title>翻书小狗 - 晚安日记</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='main_chat.css') }}">
+    <style>
+    .main-layout {
+        display: flex;
+        height: calc(100vh - 60px);
+        background: #fcf8f3;
+    }
+    .sidebar {
+        width: 220px;
+        background: #f8f3e9;
+        border-right: 1px solid #f0e6d6;
+        padding-top: 24px;
+    }
+    .diary-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0;
+        background: #fcf8f3;
+    }
+    /* .diary-container {
+        width: 520px;
+        margin: 36px auto 0 auto;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 4px 24px #f0e6d6;
+        padding: 32px 32px 24px 32px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    } */
+     .diary-container {
+    width: 760px;
+    min-height: 600px;
+    margin: 36px auto 0 auto;
+    background: #fffaf3;
+    border-radius: 32px 32px 40px 40px / 36px 36px 48px 48px;
+    box-shadow: 0 8px 32px #f5e6c6;
+    padding: 40px 48px 32px 48px;
+    position: relative;
+    overflow: hidden;
+    }
+    .diary-container::before, .diary-container::after {
+        content: "";
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 18px;
+        background: repeating-linear-gradient(
+            to bottom,
+            #ffe0b2 0 4px,
+            transparent 4px 8px
+        );
+        opacity: 0.25;
+        z-index: 0;
+    }
+    .diary-container::before { left: 0; border-radius: 32px 0 0 40px; }
+    .diary-container::after { right: 0; border-radius: 0 32px 40px 0; }
+    .diary-title {
+        font-size: 26px;
+        font-weight: 600;
+        color: #b07b4e;
+        margin-bottom: 8px;
+    }
+    .diary-desc {
+        color: #bfae9c;
+        text-align: center;
+        margin: 0 auto 10px auto;
+        max-width: 90%;
+    }
+    .diary-guide {
+        color: #ffb84d;
+        font-size: 17px;
+        margin: 10px 0 16px 0;
+        text-align: center;
+        width: 100%;
+    }
+    .diary-history-list {
+        width: 100%;
+        margin-bottom: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .diary-history-card {
+    background: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px #eee;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    /* border-left: 4px solid #7ed6c1;  // 移除 */
+    }
+    .diary-history-card:hover {
+        background: #fff5e1;
+        transform: scale(1.025);
+        box-shadow: 0 4px 16px #ffe0b2;
+    }
+    .diary-emoji {
+        font-size: 22px;
+        margin-right: 10px;
+    }
+    .diary-date {
+        color: #aaa;
+        font-size: 13px;
+        margin-right: 16px;
+        min-width: 80px;
+    }
+    .diary-content {
+        flex: 1;
+        color: #444;
+        font-size: 15px;
+    }
+    .diary-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        border-radius: 24px;
+        background: #ffb84d;
+        color: #fff;
+        font-size: 18px;
+        border: none;
+        cursor: pointer;
+        margin: 0 0 16px 0;
+        box-shadow: 0 2px 8px #eee;
+        padding: 14px 0;
+        transition: background 0.2s;
+        font-weight: 500;
+    }
+    .diary-add-btn:hover { background: #ffa726; }
+    .diary-add-btn .plus {
+        font-size: 26px;
+        margin-right: 8px;
+    }
+    .diary-input-area {
+        width: 100%;
+        background: #f8f8f8;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px #eee;
+        padding: 20px 20px 16px 20px;
+        margin-bottom: 24px;
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .diary-input-area textarea {
+        width: 100%;
+        min-height: 64px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        padding: 10px;
+        font-size: 15px;
+        resize: vertical;
+        margin-bottom: 12px;
+    }
+    .diary-submit-btn {
+        background: #ffb84d;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 0;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .diary-submit-btn:hover { background: #ffa726; }
+    @media (max-width: 600px) {
+        .diary-container, .diary-history-list, .diary-input-area, .diary-guide {
+            width: 98vw;
+            min-width: 0;
+        }
+    }
+</style>
 </head>
 <body>
     <!-- 顶部全局导航条 -->
     <header class="global-header">
         <div class="header-left">
-            <!-- Logo图片（需替换为实际logo.png） -->
             <img src="{{ url_for('static', filename='dog_avatar.png') }}" alt="Logo" class="logo-img">
             <span class="product-name">翻书小狗</span>
         </div>
         <nav class="header-nav">
-            <a href="/" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
-            <a href="/chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/login" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/main_chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
             <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
         </nav>
         <div class="header-right">
-            <!-- 个人/设置图标（需替换为实际avatar/setting.png） -->
             <img src="{{ url_for('static', filename='user_avatar.png') }}" alt="个人中心" class="user-avatar">
         </div>
     </header>
@@ -43,41 +216,99 @@
                         <div class="session-preview">记录你的心情和故事</div>
                     </div>
                 </li>
+                <li class="session-item shortcut {% if active_session == 'library' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_card_icon.png') }}" alt="小狗图书馆" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">小狗图书馆</div>
+                        <div class="session-preview">书是小狗成长的养分</div>
+                    </div>
+                </li>
             </ul>
         </aside>
 
-        <!-- 右侧主内容区 -->
+        
         <main class="diary-main">
-            <div class="diary-card">
-                <!-- 顶部图标（请替换为实际的日记/日历/笔记本图片） -->
-                <img src="{{ url_for('static', filename='diary_card_icon.png') }}" alt="日记图标" class="diary-icon" style="width:56px;height:56px;display:block;margin:32px auto 0 auto;">
-                <!-- ↑↑↑ 请放置灰色笔记本/日历图标图片，建议命名为diary_card_icon.png ↑↑↑ -->
-
-                <div class="diary-title">晚安日记</div>
-                <div class="diary-desc">
-                    小狗正在努力整理一个秘密基地，帮你记录每天的心情和故事
-                </div>
-                <button class="diary-btn" id="diary-wait-btn">我期待这个功能！</button>
+        <div class="diary-container">
+            <div class="diary-title">晚安日记</div>
+            <div class="diary-desc">
+                这里是你的秘密基地，只有你和小狗知道。睡前的缓一缓时间到啦!<br>如果睡不着，把今天的心情写下来可能会好一点哦，小狗陪着你，晚安。
             </div>
-        </main>
+            <div class="diary-guide">小狗在等你分享今天的小故事哦~</div>
+
+            <div class="diary-history-list" id="diary-history-list">
+                <div class="diary-history-card">
+                    <span class="diary-emoji">☕</span>
+                    <div class="diary-date">2025-08-21</div>
+                    <div class="diary-content">喝到了超好喝的拿铁</div>
+                </div>
+                <div class="diary-history-card">
+                    <span class="diary-emoji">😂</span>
+                    <div class="diary-date">2025-08-20</div>
+                    <div class="diary-content">朋友发来搞笑视频，笑到肚子疼</div>
+                </div>
+                <div class="diary-history-card">
+                    <span class="diary-emoji">🌇</span>
+                    <div class="diary-date">2025-08-19</div>
+                    <div class="diary-content">看到窗外的夕阳特别美</div>
+                </div>
+            </div>
+
+            <!-- 优化后的加号按钮 -->
+            <button class="diary-add-btn" id="diary-add-btn" title="写新日记">
+                <span class="plus">+</span> 记录今晚心情（小狗会为你保密，安心写下你的故事吧~）
+            </button>
+
+            <div class="diary-input-area" id="diary-input-area">
+                <textarea placeholder="写下今晚的心情或一件小事，哪怕只有一句也好……"></textarea>
+                <button class="diary-submit-btn" id="diary-submit-btn">保存</button>
+            </div>
+        </div>
+    </main>
     </div>
 
     <script>
-    // 按钮点击收集（可扩展为AJAX上报）
+    // 侧边栏切换
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('diary-wait-btn').onclick = function() {
-            alert('你的期待已收到，小狗会努力开发这个功能！');
-            // TODO: 可在此处发送AJAX到后端收集点击
-        };
-        // 侧边栏切换
         document.querySelectorAll('.session-item').forEach(function(item, idx) {
             item.onclick = function() {
                 if(idx === 0) window.location.href = "/main_chat";
                 if(idx === 1) window.location.href = "/diary";
+                if(idx === 2) window.location.href = "/library";
             }
         });
+
+        // 新增日记按钮逻辑
+        const addBtn = document.getElementById('diary-add-btn');
+        const inputArea = document.getElementById('diary-input-area');
+        const submitBtn = document.getElementById('diary-submit-btn');
+        const textarea = inputArea.querySelector('textarea');
+        const historyList = document.getElementById('diary-history-list');
+
+        addBtn.onclick = function() {
+            inputArea.style.display = inputArea.style.display === 'flex' ? 'none' : 'flex';
+            textarea.value = '';
+            textarea.focus();
+        };
+
+        submitBtn.onclick = function() {
+            const content = textarea.value.trim();
+            if(!content) {
+                alert('请写点什么吧~');
+                return;
+            }
+            // 生成当前日期
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+            // 新建日记卡片
+            const card = document.createElement('div');
+            card.className = 'diary-history-card';
+            card.innerHTML = `<div class="diary-date">${dateStr}</div><div class="diary-content"></div>`;
+            card.querySelector('.diary-content').textContent = content;
+            // 插入到历史日记最前面
+            historyList.insertBefore(card, historyList.firstChild);
+            inputArea.style.display = 'none';
+        };
     });
     </script>
-   
 </body>
 </html>

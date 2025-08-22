@@ -16,8 +16,8 @@
             <span class="product-name">翻书小狗</span>
         </div>
         <nav class="header-nav">
-            <a href="/" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
-            <a href="/chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
+            <a href="/login" class="nav-item {% if active_page == 'home' %}active{% endif %}">首页</a>
+            <a href="/main_chat" class="nav-item {% if active_page == 'chat' %}active{% endif %}">聊天</a>
             <a href="/profile" class="nav-item {% if active_page == 'profile' %}active{% endif %}">个人</a>
         </nav>
         <div class="header-right">
@@ -42,6 +42,13 @@
                     <div class="session-info">
                         <div class="session-name">晚安日记</div>
                         <div class="session-preview">记录你的心情和故事</div>
+                    </div>
+                </li>
+                <li class="session-item shortcut {% if active_session == 'library' %}active{% endif %}">
+                    <img src="{{ url_for('static', filename='diary_card_icon.png') }}" alt="小狗图书馆" class="session-avatar">
+                    <div class="session-info">
+                        <div class="session-name">小狗图书馆</div>
+                        <div class="session-preview">书是小狗成长的养分</div>
                     </div>
                 </li>
             </ul>

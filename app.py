@@ -544,6 +544,29 @@ def diary():
         active_page='chat',         # 保持顶部导航高亮在“聊天”
         active_session='diary'      # 侧边栏高亮“晚安日记”
     )
+
+
+
+@app.route('/library')
+def library():
+    # 小狗图书馆页，active_page用于高亮导航
+    return render_template(
+        'library.html',
+        active_page='chat', 
+        active_session='library'
+    )
+
+
+@app.route('/login')
+def login():
+    # 登录页，active_page用于高亮导航
+    return render_template('login.html', active_page='home')
+
+@app.route('/profile')
+def profile():
+    # 个人中心页，active_page用于高亮导航
+    return render_template('profile.html', active_page='profile')
+
 # 启动应用的入口
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

@@ -453,3 +453,181 @@ body {
 .diary-btn:hover {
     background: #ffa733;
 }
+
+/* 右侧小狗图书馆主内容区（承接现有 main_chat.css 样式） */
+.library-main {
+flex: 1 1 auto;
+display: flex;
+flex-direction: column;
+background: #f9f6f1;
+min-width: 0;
+padding: 24px 32px;
+box-sizing: border-box;
+}
+/* 图书馆头部标题区 */
+.library-header {
+text-align: center;
+margin-bottom: 32px;
+padding-top: 12px;
+}
+.library-header-img {
+width: 80px;
+height: 80px;
+border-radius: 50%;
+background: #ffe4b5;
+object-fit: cover;
+margin: 0 auto 16px;
+border: 2px solid #f0e6d2;
+}
+.library-title {
+font-size: 24px;
+font-weight: bold;
+color: #b97a56;
+letter-spacing: 1px;
+margin-bottom: 8px;
+}
+.library-desc {
+font-size: 16px;
+color: #bfae9a;
+line-height: 1.4;
+}
+/* 阅读进度展示区 */
+.progress-section {
+background: #fcf7ee;
+border-radius: 12px;
+padding: 20px 24px;
+margin-bottom: 28px;
+border: 1px solid #f0e6d2;
+box-shadow: 0 2px 8px rgba (200,180,120,0.04);
+}
+.progress-title {
+font-size: 18px;
+font-weight: bold;
+color: #7c5c38;
+margin-bottom: 12px;
+}
+.progress-bar {
+width: 100%;
+height: 10px;
+background: #f7f1e6;
+border-radius: 5px;
+overflow: hidden;
+border: 1px solid #f0e6d2;
+}
+.progress-fill {
+height: 100%;
+background: #ff9900;
+border-radius: 4px;
+transition: width 0.3s ease;
+}
+.progress-text {
+margin-top: 10px;
+font-size: 15px;
+color: #bfae9a;
+}
+/* 书架标题与内容区 */
+.bookshelf-header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 16px;
+}
+.bookshelf-title {
+font-size: 20px;
+font-weight: bold;
+color: #7c5c38;
+}
+.add-book-btn {
+background: #ffe4b5;
+color: #b97a56;
+border: none;
+border-radius: 18px;
+padding: 6px 18px;
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: background 0.2s;
+}
+.add-book-btn:hover {
+background: #ffdf9e;
+color: #a66e42;
+}
+/* 书架网格布局 */
+.bookshelf {
+display: grid;
+grid-template-columns: repeat (auto-fill, minmax (140px, 1fr));
+gap: 20px;
+padding-bottom: 16px;
+}
+/* 书籍卡片样式 */
+.book-item {
+background: #fcf7ee;
+border-radius: 10px;
+padding: 20px 12px;
+text-align: center;
+cursor: pointer;
+transition: all 0.2s ease;
+border: 1px solid #f0e6d2;
+box-shadow: 0 2px 6px rgba (200,180,120,0.03);
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+.book-item:hover {
+transform: translateY(-4px);
+background: #fffbe9;
+box-shadow: 0 4px 12px rgba(255,153,0,0.06);
+border-color: #ffe4b5;
+}
+.book-cover {
+width: 60px;
+height: 60px;
+border-radius: 8px;
+background: #ffe4b5;
+object-fit: cover;
+margin-bottom: 14px;
+border: 1px solid #f0e6d2;
+}
+.book-name {
+font-size: 15px;
+font-weight: 500;
+color: #7c5c38;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+width: 100%;
+}
+/* 空书架提示（可选，无书籍时显示） */
+.empty-bookshelf {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+height: 300px;
+color: #bfae9a;
+text-align: center;
+}
+.empty-bookshelf-img {
+width: 120px;
+height: 120px;
+margin-bottom: 20px;
+opacity: 0.6;
+}
+.empty-bookshelf-text {
+font-size: 16px;
+margin-bottom: 24px;
+}
+.empty-add-btn {
+background: #ff9900;
+color: #fff;
+border: none;
+border-radius: 20px;
+padding: 10px 28px;
+font-size: 16px;
+font-weight: bold;
+cursor: pointer;
+transition: background 0.2s;
+}
+.empty-add-btn:hover {
+background: #ffa733;
+}

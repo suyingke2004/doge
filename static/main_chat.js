@@ -37,6 +37,7 @@ document.querySelectorAll('.session-item').forEach(function(item, idx) {
     item.onclick = function() {
         if(idx === 0) window.location.href = "/main_chat";
         if(idx === 1) window.location.href = "/diary";
+        if(idx === 2) window.location.href = "/library";
     }
 });
 
